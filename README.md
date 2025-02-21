@@ -13,4 +13,4 @@ bundle exec jekyll serve
 
 ## Credits 
 
-This website is built using [geo-ant/blog](https://github.com/geo-ant/blog). 
+This website is built using [geo-ant/blog](https://github.com/geo-ant/blog).
