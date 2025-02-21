@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The Covariance Matrix for Variable Projection with Multiple Right Hand Sides – Stack Separating – There is nothing more practical than a good theory</title>
+
+        <meta charset="utf-8" />
+    <meta content='text/html; charset=utf-8' http-equiv='Content-Type'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>
+
+    
+    <meta name="description" content="In this article, I explore how to efficiently calculate the covariance matrix
+of the best fit parameters for global fitting problems that use the
+variable projection (VarPro) algorithm. It’s a very niche topic, but I do need it for
+my open source library so I might as well write it down. It might be helpful
+for people looking to gain a deeper understanding of the math behind VarPro.
+" />
+    <meta property="og:description" content="In this article, I explore how to efficiently calculate the covariance matrix
+of the best fit parameters for global fitting problems that use the
+variable projection (VarPro) algorithm. It’s a very niche topic, but I do need it for
+my open source library so I might as well write it down. It might be helpful
+for people looking to gain a deeper understanding of the math behind VarPro.
+" />
+    
+    <meta name="author" content="Stack Separating
+" />
+
+    
+    <meta property="og:title" content="The Covariance Matrix for Variable Projection with Multiple Right Hand Sides
+" />
+    <meta property="twitter:title" content="The Covariance Matrix for Variable Projection with Multiple Right Hand Sides
+" />
+    
+
+    
+
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link rel="stylesheet" type="text/css" href="/blog/style.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
+    <link rel="alternate" type="application/rss+xml" title="Stack Separating - There is nothing more practical than a good theory" href="/blog/feed.xml" />
+    <!--Google fonts: See this article for changing fonts: http://sebrink.de/Google-Webfonts-for-my-Jekyll/ -->
+    <!-- <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Code+Pro|Vollkorn+SC|Vollkorn:400,400i&display=swap" rel="stylesheet"> -->
+    <!--
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Lato:wght@700;900&family=Source+Code+Pro:wght@500&family=Dela+Gothic+One&family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">     
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono&family=Lato:wght@700&family=Marcellus&family=Vollkorn:ital@1&display=swap" rel="stylesheet">
+    <!-- Shortcut Icon / Favicon-->
+    <!-- <link rel="shortcut icon" type="image/png" href="/blog/images/favicon-196x196.png">
+    <link rel="shortcut icon" sizes="196x196" href="/blog/images/favicon-196x196.png"> -->
+
+
+    <!-- Created with Jekyll Now - http://github.com/barryclark/jekyll-now -->
+  </head>
+
+  <body>
+    <div class="wrapper-masthead">
+      <div class="container">
+        <header class="masthead clearfix">
+          <!-- <a href="/blog/" class="site-avatar"><img src="" /></a> -->
+
+          <div class="site-info">
+            <h1 class="site-name"><a href="/blog/"><p>Stack Separating</p>
+</a></h1>
+            <p class="site-description"><p>There is nothing more practical than a good theory</p>
+</p>
+          </div>
+
+          <nav>
+            <!-- <a href="/blog/">Recent</a> -->
+            <!-- <a href="https://ko-fi.com/geoant">Buy &#x2615;</a> -->
+            <a href="/blog/archive">Date</a>
+            <a href="/blog/tags">Tag</a>
+            <a href="/blog/about">About</a>
+            <!-- <a href="/blog/feed.xml">Feed</a> -->
+          </nav>
+        </header>
+      </div>
+    </div>
+
+    <div id="main" role="main" class="container">
+      <article class="post">
+  <h1 class="page-title"><p>The Covariance Matrix for Variable Projection with Multiple Right Hand Sides</p>
+</h1>
+  
+
+  <!-- the support banner-->
+  <div class="date" style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <!-- Left: Banner Image -->
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+      
+      <div style="text-align: right;">
+          Posted 2024-09-30 
+      </div>
+  </div>
+
+  
+
+  <div class="entry">
+    <p>In this article, I explore how to efficiently calculate the covariance matrix
+of the best fit parameters for global fitting problems that use the
+variable projection (VarPro) algorithm. It’s a very niche topic, but I do need it for
+my open source library so I might as well write it down. It might be helpful
+for people looking to gain a deeper understanding of the math behind VarPro.</p>
+
+<h1 id="varpro-minimization-recap">VarPro Minimization: Recap</h1>
+
+<p>In the <a href="/blog/2024/variable-projection-part-2-multiple-right-hand-sides/">previous article</a>
+in our VarPro series on this blog, we saw that we can express Variable Projection
+with multiple right hand sides using a couple of equivalent approaches. We can,
+for example, either use a more matrix oriented approach or a more
+vector oriented approach to the same effect. But this time, it is 
+the vector oriented approach that makes it a bit easier for me to tackle the 
+problem at hand.</p>
+
+<p>I’ll very briefly restate the fundamentals of global fitting multiple right hand sides.
+If you haven’t read the <a href="/blog/2024/variable-projection-part-2-multiple-right-hand-sides/">previous article</a>,
+I highly suggest you do. Fitting multiple right hand sides means that we have
+\(N_s\) <em>vectors</em> \(\boldsymbol{y}_1,\dots,\boldsymbol{y}_{N_s}\in \mathbb{R}^{N_y}\), that we
+want to fit with vector valued functions 
+\(\boldsymbol{f}_1,\dots,\boldsymbol{f}_{N_s} \in \mathbb{R}^{N_y}\),
+respectively. Each function can be written in matrix form as a linear combination
+of nonlinear base functions like so:</p>
+
+\[\boldsymbol{f}_k(\boldsymbol{\alpha},\boldsymbol{c}_k) = \boldsymbol{\Phi}(\boldsymbol{\alpha})\, \boldsymbol{c}_k, \label{f-phi}\tag{1}\]
+
+<p>where \(\boldsymbol{\Phi}(\boldsymbol{\alpha}) \in \mathbb{R}^{N_y \times N_c}\)
+is the matrix of the \(N_c\) nonlinear basis functions and \(\boldsymbol{c}_k \in \mathbb{R}^{N_c}\)
+are the <em>linear coefficients</em>, which can vary with \(j\), and \(\boldsymbol{\alpha} \in \mathbb{R}^{N_\alpha}\)
+are the <em>nonlinear parameters</em> of the problem, which are shared across all \(k\).
+This latter aspect is where the term <em>global fitting</em> comes from. Now, let’s
+start writing the least squares fitting problem into vector form. We begin by
+introducing a global parameter vector \(\boldsymbol{p}\) that bundles all the linear and
+nonlinear parameters for the global fitting problem like so:</p>
+
+\[\boldsymbol{p}=\left[
+\begin{matrix}
+\boldsymbol{c}_1 \\
+\vdots \\
+\boldsymbol{c}_{N_s} \\
+\boldsymbol{\alpha}
+\end{matrix}
+\right] \in \mathbb{R}^{N_s\cdot N_c + N_\alpha} \label{p-def}\tag{2}\]
+
+<p>Then, we write the weighted residual of the \(k\)-th dataset as</p>
+
+\[\boldsymbol{r}_{w,k}(\boldsymbol{p}) = \boldsymbol{W} (\boldsymbol{y}_k - \boldsymbol{f}_k(\boldsymbol{p})), \label{rwk-def}\tag{3}\]
+
+<p>where the weight matrix \(\boldsymbol{W}\in \mathbb{R}^{N_y\times N_y}\) is
+shared across all \(k\). Now, we introduce three more stacked vectors:
+for the dataset, for the function values, and for the weighted residuals,
+respectively:</p>
+
+\[\boldsymbol{y}:=\left[
+\begin{matrix}
+\boldsymbol{y}_1 \\
+\vdots \\
+\boldsymbol{y}_{N_s} \\
+\end{matrix}
+\right] ,\;
+\boldsymbol{f}(\boldsymbol{p}):=\left[
+\begin{matrix}
+\boldsymbol{f}_1 \\
+\vdots \\
+\boldsymbol{f}_{N_s} \\
+\end{matrix}
+\right] ,\;
+\boldsymbol{r}_w(\boldsymbol{p}):=\left[
+\begin{matrix}
+\boldsymbol{r}_{w,1} \\
+\vdots \\
+\boldsymbol{r}_{w,N_s} \\
+\end{matrix}
+\right] \in \mathbb{R}^{N_s\cdot N_y}. \label{yfr-def}\tag{4}\]
+
+<p>Using these definitions, we can now write the residual vector as</p>
+
+\[\boldsymbol{r}_w (\boldsymbol{p}) = \widetilde{\boldsymbol{W}} (\boldsymbol{y}-\boldsymbol{f}(\boldsymbol{p})) \label{rw-calc}\tag{5},\]
+
+<p>where \(\widetilde{\boldsymbol{W}}\) has block-diagonal structure with the matrix
+\(\boldsymbol{W}\) on the diagonal, like so:</p>
+
+\[\widetilde{\boldsymbol{W}} :=\left[
+\begin{matrix}
+\boldsymbol{W} &amp; &amp; \\
+ &amp; \ddots \\
+&amp; &amp; \boldsymbol{W} \\
+\end{matrix}
+\right] \in \mathbb{R}^{N_s\cdot N_y \times N_s \cdot N_y}. \label{wtilde-def}\tag{6}\]
+
+<p>For our least squares minimization, we want to minimize the \(\ell_2\) norm of 
+\(\boldsymbol{r}_w(\boldsymbol{p})\):</p>
+
+\[\boldsymbol{p}^\dagger = \arg \min_{\boldsymbol{p}} \Vert\boldsymbol{r}_w (\boldsymbol{p}) \Vert^2 \label{p-dagger-def}\tag{7}.\]
+
+<p>The goal of this article is to give an expression for the covariance matrix of the best fit parameters
+\(\boldsymbol{p}^\dagger\).</p>
+
+<p>Before we jump into those
+calculations, note that I mentioned in the previous article that this vector-oriented
+approach is less benefitial <em>when implementing</em> VarPro than a more matrix oriented approach.
+This is true, but mathematically both approaches are equivalent. Thus, the 
+following calculations will be true regardless how the residuals are actually calculated.</p>
+
+<h1 id="jacobian-of-the-residuals">Jacobian of the Residuals</h1>
+
+<p>The first step when calculating the covariance matrix is to calculate the Jacobian
+matrix \(\boldsymbol{J}_{r_w}\) of the weighted residuals. Let’s express it
+in terms of the Jacobian matrix \(\boldsymbol{J}_{f}\) of \(\boldsymbol{f}\):</p>
+
+\[\boldsymbol{J}_{r_w}(\boldsymbol{p}) := \frac{\partial \boldsymbol{r}_w}{\partial \boldsymbol{p}} (\boldsymbol{p})= -\widetilde{\boldsymbol{W}}\boldsymbol{J}_{f}(\boldsymbol{p})\in \mathbb{R}^{(N_s\cdot N_y) \times N_p}, \label{j-rw-def}\tag{8}\]
+
+<p>where</p>
+
+\[N_p:=(N_s\cdot N_c+N_\alpha) \label{Np-def}\tag{9}\]
+
+<p>is the total number of parameters. We can write \(\boldsymbol{J}_f\) as</p>
+
+\[\boldsymbol{J}_f(\boldsymbol{p}) := 
+\frac{\partial \boldsymbol{f}}{\partial \boldsymbol{p}}(\boldsymbol{p}) =
+\left[
+\begin{matrix}
+\boldsymbol{J}_{f_1} (\boldsymbol{p})\\
+\vdots \\
+\boldsymbol{J}_{f_{N_s}} (\boldsymbol{p})\\
+\end{matrix}
+\right], \label{jf-def}\tag{10}\]
+
+<p>where \(\boldsymbol{J}_{f_k}= \frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{p}}\)
+is the Jacobian of \(\boldsymbol{f}_k\). Since the parameter vector \(\boldsymbol{p}\) is
+written as in \(\eqref{p-def}\), we can write the Jacobian of \(\boldsymbol{f}_k\)
+as</p>
+
+\[\boldsymbol{J}_{f_k} (\boldsymbol{p})= \frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{p}}(\boldsymbol{p}) =
+\left[\begin{matrix}
+\frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{c_1}} (\boldsymbol{p})&amp; \dots &amp; \frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{c_k}} (\boldsymbol{p})&amp; \dots &amp; \frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{c_{N_s}}} (\boldsymbol{p})&amp; \frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{\alpha}}(\boldsymbol{p})\\
+\end{matrix}\right]. \label{jfk-mat}\tag{11}\]
+
+<p>There are two pieces to this expression that we need to look at separately. 
+Firstly, there is \(\frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{c_j}}\),
+which simplifies to</p>
+
+\[\frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{c_j}}(\boldsymbol{p}) =
+\left\{
+\begin{matrix}
+\boldsymbol{\Phi}(\boldsymbol{\alpha}) &amp; ,\; j = k \\
+\boldsymbol{0}_{N_y \times N_c} &amp; ,\; j \ne k .\\
+\end{matrix}  \label{dfk-dcj}\tag{12}
+\right.\]
+
+<p>Next, there is the expression \(\frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{\alpha}}\).
+There is a way to write this expression in tensor form, but keeping it in matrix
+notation comes easier to me. So let’s do that and call it \(\boldsymbol{B}_k\).</p>
+
+\[\boldsymbol{B}_k (\boldsymbol{\alpha})
+:= \frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{\alpha}} (\boldsymbol{\alpha})
+= \left[
+\begin{matrix}
+\frac{\partial \boldsymbol{\Phi}(\boldsymbol{\alpha})}{\partial \alpha_1} \boldsymbol{c}_k &amp; \dots &amp;
+\frac{\partial \boldsymbol{\Phi}(\boldsymbol{\alpha})}{\partial \alpha_{N_\alpha}} \boldsymbol{c}_k
+\end{matrix}
+\right]
+\in \mathbb{R}^{N_y \times N_\alpha}  \label{bk-def}\tag{13}\]
+
+<p>Plugging eqns. \(\eqref{dfk-dcj}\) and \(\eqref{bk-def}\) into \(\eqref{jfk-mat}\)
+gives us a block diagnal matrix with \(N_s+1\) blocks. Its last block is the matrix
+\(\boldsymbol{B}_k\), while all the other blocks are of size \(N_y \times N_c\).
+The block at index \(k\) is \(\boldsymbol{\Phi}(\boldsymbol{\alpha})\) and all the
+other blocks are zero-matrices of the same size. In matrix notation this
+becomes:</p>
+
+\[\frac{\partial \boldsymbol{f}_k}{\partial \boldsymbol{p}}(\boldsymbol{p}) =
+\left[\begin{matrix}
+\underbrace{\boldsymbol{0}_{N_y \times N_c}}_{\text{block } 1} &amp; \dots &amp; \boldsymbol{0}_{N_y \times N_c} 
+&amp; \underbrace{\boldsymbol{\Phi}(\boldsymbol{\alpha})}_{\text{block } k} &amp;
+\boldsymbol{0}_{N_y \times N_c} &amp; \dots &amp; \underbrace{\boldsymbol{0}_{N_y \times N_c}}_{\text{block } N_s}&amp; 
+\underbrace{\boldsymbol{B}_k(\boldsymbol{\alpha})}_{\text{block } N_s+1} 
+\end{matrix}\right].  \label{jfk-block}\tag{14}\]
+
+<p>Now, to obtain the Jacobian \(\boldsymbol{J}_f\) of \(\boldsymbol{f}(\boldsymbol{p})\), we
+need to stack the individual Jacobians on top of each other as seen in eq. \(\eqref{jf-def}\).
+This will create a matrix like this:</p>
+
+\[\boldsymbol{J}_f(\boldsymbol{p}) = \frac{\partial \boldsymbol{f}}{\partial \boldsymbol{p}}(\boldsymbol{p}) =
+\left[\begin{matrix}
+\underbrace{
+\begin{matrix}
+\boldsymbol{\Phi}(\boldsymbol{\alpha}) &amp; &amp;  \\
+ &amp; \ddots &amp; &amp; \\
+ &amp; &amp; \boldsymbol{\Phi}(\boldsymbol{\alpha}) \\
+\end{matrix}
+}_{N_s \times N_s \text{ blocks}}
+&amp;
+\begin{matrix}
+\boldsymbol{B}_1(\boldsymbol{\alpha}) \\
+\vdots \\
+\boldsymbol{B}_{N_s}(\boldsymbol{\alpha}) \\
+\end{matrix}
+\end{matrix}\right], \tag{15}\label{jac-f}\]
+
+<p>where the blocks that are left blank are zeros of appropriate size. Finally,
+this gives us the Jacobian of \(\boldsymbol{r}_w\) using eq. \(\eqref{j-rw-def}\):</p>
+
+\[\boldsymbol{J}_{r_w}(\boldsymbol{p}) = - \widetilde{\boldsymbol{W}} \boldsymbol{J}_{f}(\boldsymbol{p}) =
+-\left[\begin{matrix}
+\boldsymbol{W}\boldsymbol{\Phi}(\boldsymbol{\alpha}) &amp; &amp; &amp;\boldsymbol{W} \boldsymbol{B}_1(\boldsymbol{\alpha})  \\
+ &amp; \ddots &amp; &amp;  \vdots \\
+ &amp; &amp;\boldsymbol{W} \boldsymbol{\Phi}(\boldsymbol{\alpha}) &amp;\boldsymbol{W} \boldsymbol{B}_{N_s}(\boldsymbol{\alpha}) 
+\end{matrix}\right] \tag{16}\label{jac-rw}\]
+
+<h1 id="the-covariance-matrix-of-the-best-fit-parameters">The Covariance Matrix of the Best Fit Parameters</h1>
+
+<blockquote>
+  <p><span style="font-variant:small-caps;">Remark on Notation</span></p>
+
+  <p>From now on, we’ll see a couple of long-ish expressions involving parametrized
+matrices. I’ll omit the parameters in the matrices inside the expression
+and just append them once at the end. So instead of \(\boldsymbol{X}(\boldsymbol{p})\boldsymbol{Y}(\boldsymbol{p})\),
+I’ll just write \(\boldsymbol{X}\boldsymbol{Y}(\boldsymbol{p})\). I’ll do this
+for all expressions involving matrix products, even including transposes
+and inverses.</p>
+</blockquote>
+
+<p>For the following calculations, it’s helpful to rewrite eq. \(\eqref{jac-rw}\) by introducing the
+block diagonal matrix \(\boldsymbol{A}(\boldsymbol{\alpha})\) and the block
+matrix \(\boldsymbol{B}(\boldsymbol{\alpha})\) such that</p>
+
+\[\begin{eqnarray}
+\boldsymbol{J}_{r_w}(\boldsymbol{p}) &amp;=&amp; -\left[ 
+\begin{matrix}
+\boldsymbol{A}(\boldsymbol{\alpha}) &amp; \boldsymbol{B}(\boldsymbol{\alpha})
+\end{matrix}
+ \right],  \tag{17} \label{jac-rw-ab} \\
+\\
+\boldsymbol{A}(\boldsymbol{\alpha}) &amp;:=&amp;
+\left[\begin{matrix}
+\boldsymbol{W}\boldsymbol{\Phi}(\boldsymbol{\alpha}) &amp; &amp;  \\
+ &amp; \ddots &amp; \\
+ &amp; &amp;\boldsymbol{W} \boldsymbol{\Phi}(\boldsymbol{\alpha}) 
+\end{matrix}\right],\;
+\boldsymbol{B}(\boldsymbol{\alpha}) :=
+\left[\begin{matrix}
+\boldsymbol{W} \boldsymbol{B}_1(\boldsymbol{\alpha})  \\
+\vdots  \\
+\boldsymbol{W} \boldsymbol{B}_{N_s}(\boldsymbol{\alpha}) 
+\end{matrix}\right]. \tag{18}\label{def-ab}
+\end{eqnarray}\]
+
+<p>From my article on <a href="/blog/2024/bayesian-nonlinear-least-squares/">Bayesian Nonlinear Least Squares</a>,
+we know that we can write the covariance matrix \(\boldsymbol{C}_{p^\dagger}\) of
+the best fit parameters \(\boldsymbol{p}\) as</p>
+
+\[\boldsymbol{C}_{p^\dagger} = \hat{\sigma} \left(\boldsymbol{J}^T_{r_w} \boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger) \right)^{-1} \in \mathbb{R}^{N_p \times N_p} \label{cov-jrw}\tag{19},\]
+
+<p>where \(\hat{\sigma}\) is a scalar that depends on our prior assumptions. Let’s
+find an expression for this step by step, starting with the matrix product
+\(\boldsymbol{J}^T_{r_w} \boldsymbol{J}_{r_w}\).</p>
+
+\[\begin{eqnarray}
+&amp;\boldsymbol{J}^T_{r_w}&amp; \boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger) =
+\left[
+\begin{matrix}
+\boldsymbol{A}^T \boldsymbol{A}(\boldsymbol{\alpha}^\dagger) &amp; \boldsymbol{A}^T \boldsymbol{B}(\boldsymbol{\alpha}^\dagger) \\
+\boldsymbol{B}^T \boldsymbol{A}(\boldsymbol{\alpha}^\dagger) &amp; \boldsymbol{B}^T \boldsymbol{B}(\boldsymbol{\alpha}^\dagger) \\
+\end{matrix}
+\right] \label{jtj-ab} \tag{20} \\
+\\
+&amp;=&amp; \left[
+\begin{matrix}
+(\boldsymbol{W}\boldsymbol{\Phi})^T \boldsymbol{W}\boldsymbol{\Phi}(\boldsymbol{\alpha}^\dagger)  &amp; &amp; &amp; (\boldsymbol{W}\boldsymbol{\Phi})^T W\boldsymbol{B}_1(\boldsymbol{\alpha}^\dagger) \\
+&amp;\ddots  &amp; &amp; \vdots \\
+&amp; &amp; (\boldsymbol{W}\boldsymbol{\Phi})^T \boldsymbol{W}\boldsymbol{\Phi}(\boldsymbol{\alpha}^\dagger)   &amp; (\boldsymbol{W}\boldsymbol{\Phi})^T W\boldsymbol{B}_{N_s}(\boldsymbol{\alpha}^\dagger) \\
+(W\boldsymbol{B}_1)^T \boldsymbol{W}\boldsymbol{\Phi}(\boldsymbol{\alpha}^\dagger)  &amp; \dots &amp; (W\boldsymbol{B}_{N_s})^T \boldsymbol{W}\boldsymbol{\Phi}(\boldsymbol{\alpha}^\dagger) &amp; \sum_{k=1}^{N_s}(W\boldsymbol{B}_{k})^T W\boldsymbol{B}_{k}(\boldsymbol{\alpha}^\dagger) \\
+\end{matrix} \label{jtj-full} \tag{21}
+\right], 
+\end{eqnarray}\]
+
+<p>where \(\boldsymbol{\alpha}^\dagger\) are the best-fit nonlinear parameters.
+We could be tempted to invert eq. \(\eqref{jtj-full}\) directly to get to the covariance matrix
+in eq. \(\eqref{cov-jrw}\). But keep in mind that it’s an \(N_p \times N_p\) matrix,
+where \(N_p = N_s \cdot N_c + N_\alpha\).
+That’s not a big deal if we only have a tiny number of right hand sides and 
+linear coefficients. If, however, the number of linear coefficients \(N_c\)
+becomes large, say \(\mathcal{O}(10)\), and / or the
+number of right hand sides \(N_s\) becomes huge, 
+say \(\mathcal{O}(10^5)\), then this matrix quickly reaches billions or even
+trillions of elements. That’s why it makes sense to exploit the special structure
+of the matrix a bit more to help calculate its inverse.</p>
+
+<p>Since \(\boldsymbol{J}^T_{r_w} \boldsymbol{J}_{r_w}\) is a \(2 \times 2\) block
+diagonal matrix, we can use it’s <a href="https://en.wikipedia.org/wiki/Schur_complement#Properties">Schur complement</a>
+to help us express the inverse. It’s Schur complement with respect to it’s upper
+left block is defined as:</p>
+
+\[\boldsymbol{S}(\boldsymbol{\alpha}) := \boldsymbol{B}^T \boldsymbol{B}(\boldsymbol{\alpha}^\dagger) -\boldsymbol{B}^T \boldsymbol{A}  (\boldsymbol{A}^T \boldsymbol{A})^{-1}\boldsymbol{A}^T \boldsymbol{B}(\boldsymbol{\alpha}^\dagger) \in \mathbb{R}^{N_\alpha \times N_\alpha}. \label{schur}\tag{22}\]
+
+<p>where the inverse to \((\boldsymbol{A}^T \boldsymbol{A})\) must exist<sup id="fnref:inverse" role="doc-noteref"><a href="#fn:inverse" class="footnote" rel="footnote">1</a></sup><sup>,</sup><sup id="fnref:existence" role="doc-noteref"><a href="#fn:existence" class="footnote" rel="footnote">2</a></sup>. Since
+\((\boldsymbol{A}^T \boldsymbol{A})\) is a block diagonal matrix containing
+\((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi} (\boldsymbol{\alpha}^\dagger)\) 
+on the diagonal, it’s actually very simple to invert:</p>
+
+\[(\boldsymbol{A}^T \boldsymbol{A})^{-1}(\boldsymbol{\alpha}) =
+\left[\begin{matrix}
+((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi})^{-1} (\boldsymbol{\alpha}^\dagger)&amp; &amp;  \\
+ &amp; \ddots &amp; \\
+ &amp; &amp;((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi})^{-1} (\boldsymbol{\alpha}^\dagger)
+\end{matrix}\right]. \label{ata-inv} \tag{23}\]
+
+<p>For this expression, we only need to calculate the inverse of the relatively small matrix
+\((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi} \in \mathbb{R}^{N_c \times N_c}\),
+which for a typical number of basefunctions only has tens or hundreds of elements,
+rather than billions. This allows us to simplify the expression for the Schur
+complement considerably. After a bit of calculating, we come up with:</p>
+
+\[\begin{eqnarray}
+\boldsymbol{S}(\boldsymbol{\alpha}^\dagger) := &amp;\sum_{k=1}^{N_s}&amp;\left[(W\boldsymbol{B}_{k})^T W\boldsymbol{B}_{k}(\boldsymbol{\alpha}^\dagger)\right. \\
+ &amp;+&amp;\left.((\boldsymbol{W \Phi})^T \boldsymbol{W B}_k)^T ((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi})^{-1} (\boldsymbol{W \Phi})^T \boldsymbol{W B}_k)(\boldsymbol{\alpha}^\dagger)\right]. \label{schur-sum}\tag{24} 
+\end{eqnarray}\]
+
+<p>That thing might not look like a simplification at first, but remember it’s essentially a 
+sum of pretty small \(N_\alpha \times N_\alpha\) matrices. Also the inverse
+of \(((\boldsymbol{W \Phi})^{-1}\boldsymbol{W \Phi})\) does not change with \(k\)
+and can be pre-calculated. Further, note that the matrix product on the right
+hand side has the structure \(\boldsymbol{X}^T \boldsymbol{YX}\). Note also that
+for our case \(\boldsymbol{S}(\boldsymbol{\alpha}^\dagger)  = \boldsymbol{S}^T(\boldsymbol{\alpha}^\dagger)\),
+i.e. the Schur complement is symmetric.</p>
+
+<p>Using its Schur complement, we can give an 
+<a href="https://en.wikipedia.org/wiki/Schur_complement#Properties">expression for the inverse</a>
+of \(\boldsymbol{J}_{r_w}^T\boldsymbol{J}_{r_w}\) in a block diagonal form:</p>
+
+\[(\boldsymbol{J}_{r_w}^T\boldsymbol{J}_{r_w})^{-1}(\boldsymbol{p}^\dagger) =
+\left[
+\begin{matrix}
+(\boldsymbol{A}^T \boldsymbol{A})^{-1}(\boldsymbol{\alpha}^\dagger) + \boldsymbol{G}\boldsymbol{S}^{-1}\boldsymbol{G^T}(\boldsymbol{\alpha}^\dagger) &amp; -\boldsymbol{G S}^{-1}(\boldsymbol{\alpha}^\dagger) \\
+- (\boldsymbol{G S}^{-1}(\boldsymbol{\alpha}^\dagger))^T &amp; \boldsymbol{S}^{-1}(\boldsymbol{\alpha}^\dagger) \label{jtj-inv-schur} \tag{25}\\
+\end{matrix}
+\right],\]
+
+<p>where we have introduced the matrix \(\boldsymbol{G}\) as</p>
+
+\[\boldsymbol{G}(\boldsymbol{\alpha}^\dagger) 
+=(\boldsymbol{A}^T \boldsymbol{A})^{-1} \boldsymbol{A}^T \boldsymbol{B} (\boldsymbol{\alpha}^\dagger)
+=\left[
+\begin{matrix}
+((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi})^{-1}(\boldsymbol{W \Phi})^T \boldsymbol{WB}_1(\boldsymbol{\alpha}^\dagger) \\
+\vdots \\
+((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi})^{-1}(\boldsymbol{W \Phi})^T \boldsymbol{WB}_{N_s}(\boldsymbol{\alpha}^\dagger) \label{g-def}\tag{26} \\
+\end{matrix}
+\right]\]
+
+<p>The neat thing about calculating the inverse of \(\boldsymbol{J}_{r_w}^T\boldsymbol{J}_{r_w}\)
+via eq. \(\eqref{jtj-inv-schur}\) is, that we only have to calculate the inverse
+of relatively small matrices: \(\boldsymbol{S}^{-1}\) is pretty small and so is
+\(((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi})^{-1}\), which we can use to build
+the inverse of \(\boldsymbol{A}^T\boldsymbol{A}\). This, in turn, gives us a
+numerically efficient (and probably more stable) way of calculating the
+covariance matrix using eq. \(\eqref{cov-jrw}\). There might be even further
+simplifications that we can exploit, but I’ll leave it at that for now<sup id="fnref:pseudoinverse" role="doc-noteref"><a href="#fn:pseudoinverse" class="footnote" rel="footnote">3</a></sup>.</p>
+
+<h1 id="endnotes">Endnotes</h1>
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:inverse" role="doc-endnote">
+      <p>One can see in the expressions below, that this inverse exists if \(\boldsymbol{W \Phi}(\boldsymbol{\alpha}^\dagger)\) has linear independent columns. That means the base functions (at the best fit parameters) must be linearly independent, which should be the case for a correcly chosen set of basefunctions for VarPro. <a href="#fnref:inverse" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:existence" role="doc-endnote">
+      <p>Note that \((\boldsymbol{A}^T\boldsymbol{A})^{-1}\) existing is necessary but not sufficient for the existence of \((\boldsymbol{J}_{r_w}^T\boldsymbol{J}_{r_w})^{-1}\). We assume the latter also exists, because we need it to calculate the covariance matrix. <a href="#fnref:existence" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:pseudoinverse" role="doc-endnote">
+      <p>Note, for example that some expressions involve \(((\boldsymbol{W \Phi})^T \boldsymbol{W \Phi})^{-1}(\boldsymbol{W \Phi})^T\), which is the pseudoinverse of \(\boldsymbol{W \Phi}\). We can use SVD or QR decompositions to obtain the solutions rather than calculating the peudoinverse itself. <a href="#fnref:pseudoinverse" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+
+    <div>
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+    <div>
+  </div>
+    
+  <div>
+    
+    
+      <a href="/blog/tags/#algorithm" class="post-tag">algorithm</a>
+    
+      <a href="/blog/tags/#least-squares" class="post-tag">least-squares</a>
+    
+      <a href="/blog/tags/#varpro" class="post-tag">varpro</a>
+    
+  </div>
+
+  <div>
+  
+    <script src="  https://unpkg.com/showdown/dist/showdown.min.js"></script>
+<script>
+const GH_API_URL = 'https://api.github.com/repos/statmlben/stackseparating/issues/71/comments'; // ?client_id=&client_secret=
+
+let request = new XMLHttpRequest();
+request.open( 'GET', GH_API_URL, true );
+request.onload = function() {
+	if ( this.status >= 200 && this.status < 400 ) {
+		let response = JSON.parse( this.response );
+
+		for ( var i = 0; i < response.length; i++ ) {
+			document.getElementById( 'gh-comments-list' ).appendChild( createCommentEl( response[ i ] ) );
+		}
+
+		if ( 0 === response.length ) {
+			document.getElementById( 'no-comments-found' ).style.display = 'block';
+		}
+	} else {
+		console.error( this );
+	}
+};
+
+function createCommentEl( response ) {
+	let user = document.createElement( 'a' );
+	user.setAttribute( 'href', response.user.url.replace( 'api.github.com/users', 'github.com' ) );
+	user.classList.add( 'user' );
+
+	//let userAvatar = document.createElement( 'img' );
+	let userAvatar = document.createElement( 'a' );
+	userAvatar.classList.add( 'avatar' );
+	userAvatar.innerHTML =  response.user.login +':';
+	//userAvatar.style.fontStyle = "italic";
+
+	user.appendChild( userAvatar );
+
+	let commentLink = document.createElement( 'a' );
+	commentLink.setAttribute( 'href', response.html_url );
+	commentLink.classList.add( 'comment-url' );
+	commentLink.innerHTML = '(#' + response.id + ' - ' + response.created_at+')';
+	commentLink.style.fontSize = "small";
+
+	let commentContents = document.createElement( 'div' );
+	commentContents.classList.add( 'comment-content' );
+	commentContents.innerHTML = response.body;
+	// Progressive enhancement.
+	if ( window.showdown ) {
+		let converter = new showdown.Converter();
+		commentContents.innerHTML = converter.makeHtml( response.body );
+	}
+
+	let comment = document.createElement( 'li' );
+	comment.setAttribute( 'data-created', response.created_at );
+	comment.setAttribute( 'data-author-avatar', response.user.avatar_url );
+	comment.setAttribute( 'data-user-url', response.user.url );
+
+	comment.appendChild( user );
+	comment.appendChild( commentContents );
+	comment.appendChild( commentLink );
+
+	return comment;
+}
+request.send();
+</script>
+
+
+<div class="github-comments">
+	<h1>Comments</h1>
+	<ul id="gh-comments-list"></ul>
+	<p id="no-comments-found">You can comment on this post using your GitHub account.</p>
+	<p id="leave-a-comment">Join the discussion for this article on <a href="https://github.com/statmlben/stackseparating/issues/71">this ticket</a>. Comments appear on this page instantly.</p>
+</div>
+
+  
+
+  
+    <script type="text/javascript">
+window.MathJax = {
+  tex: {
+    packages: ['base', 'ams', 'boldsymbol', 'require']
+  },
+  loader: {
+    load: ['ui/menu', '[tex]/ams', '[tex]/boldsymbol' ,'[tex]/require']
+  },
+  startup: {
+    ready() {
+      MathJax.startup.defaultReady();
+      const Macro = MathJax._.input.tex.Symbol.Macro;
+      const MapHandler = MathJax._.input.tex.MapHandler.MapHandler;
+      const Array = MathJax._.input.tex.ams.AmsMethods.default.Array;
+      const env = new Macro('psmallmatrix', Array, [null, '(', ')', 'c', '.333em', '.2em', 'S', 1]);
+      MapHandler.getMap('AMSmath-environment').add('psmallmatrix', env);
+    }
+  }
+};
+</script>
+<script type="text/javascript" id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"> 
+<!-- replace with this for local mathjax support (for drafting without internet). DON'T PUBLISH -->
+<!-- src="/home/georgios/code/thirdparty/MathJax/es5/tex-chtml.js"> -->
+</script>
+
+  
+  </div>
+
+</article>
+
+    </div>
+
+    <div class="wrapper-footer">
+      <div class="container">
+        <footer class="footer">
+          
+<a href="mailto:bendai@cuhk.edu.hk"><i class="svg-icon email"></i></a>
+
+
+<a href="https://github.com/statmlben"><i class="svg-icon github"></i></a>
+
+
+
+<!-- <a href="/blog/feed.xml"><i class="svg-icon rss"></i></a> -->
+
+
+
+
+        </footer>
+      </div>
+    </div>
+
+    
+<script type="text/javascript">
+  /**
+ * AnchorJS - v4.1.0 - 2017-09-20
+ * https://github.com/bryanbraun/anchorjs
+ * Copyright (c) 2017 Bryan Braun; Licensed MIT
+ */
+!function(A,e){"use strict";"function"==typeof define&&define.amd?define([],e):"object"==typeof module&&module.exports?module.exports=e():(A.AnchorJS=e(),A.anchors=new A.AnchorJS)}(this,function(){"use strict";return function(A){function e(A){A.icon=A.hasOwnProperty("icon")?A.icon:"",A.visible=A.hasOwnProperty("visible")?A.visible:"hover",A.placement=A.hasOwnProperty("placement")?A.placement:"right",A.ariaLabel=A.hasOwnProperty("ariaLabel")?A.ariaLabel:"Anchor",A.class=A.hasOwnProperty("class")?A.class:"",A.truncate=A.hasOwnProperty("truncate")?Math.floor(A.truncate):64}function t(A){var e;if("string"==typeof A||A instanceof String)e=[].slice.call(document.querySelectorAll(A));else{if(!(Array.isArray(A)||A instanceof NodeList))throw new Error("The selector provided to AnchorJS was invalid.");e=[].slice.call(A)}return e}function i(){if(null===document.head.querySelector("style.anchorjs")){var A,e=document.createElement("style");e.className="anchorjs",e.appendChild(document.createTextNode("")),void 0===(A=document.head.querySelector('[rel="stylesheet"], style'))?document.head.appendChild(e):document.head.insertBefore(e,A),e.sheet.insertRule(" .anchorjs-link {   opacity: 0;   text-decoration: none;   -webkit-font-smoothing: antialiased;   -moz-osx-font-smoothing: grayscale; }",e.sheet.cssRules.length),e.sheet.insertRule(" *:hover > .anchorjs-link, .anchorjs-link:focus  {   opacity: 1; }",e.sheet.cssRules.length),e.sheet.insertRule(" [data-anchorjs-icon]::after {   content: attr(data-anchorjs-icon); }",e.sheet.cssRules.length),e.sheet.insertRule(' @font-face {   font-family: "anchorjs-icons";   src: url(data:n/a;base64,AAEAAAALAIAAAwAwT1MvMg8yG2cAAAE4AAAAYGNtYXDp3gC3AAABpAAAAExnYXNwAAAAEAAAA9wAAAAIZ2x5ZlQCcfwAAAH4AAABCGhlYWQHFvHyAAAAvAAAADZoaGVhBnACFwAAAPQAAAAkaG10eASAADEAAAGYAAAADGxvY2EACACEAAAB8AAAAAhtYXhwAAYAVwAAARgAAAAgbmFtZQGOH9cAAAMAAAAAunBvc3QAAwAAAAADvAAAACAAAQAAAAEAAHzE2p9fDzz1AAkEAAAAAADRecUWAAAAANQA6R8AAAAAAoACwAAAAAgAAgAAAAAAAAABAAADwP/AAAACgAAA/9MCrQABAAAAAAAAAAAAAAAAAAAAAwABAAAAAwBVAAIAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAMCQAGQAAUAAAKZAswAAACPApkCzAAAAesAMwEJAAAAAAAAAAAAAAAAAAAAARAAAAAAAAAAAAAAAAAAAAAAQAAg//0DwP/AAEADwABAAAAAAQAAAAAAAAAAAAAAIAAAAAAAAAIAAAACgAAxAAAAAwAAAAMAAAAcAAEAAwAAABwAAwABAAAAHAAEADAAAAAIAAgAAgAAACDpy//9//8AAAAg6cv//f///+EWNwADAAEAAAAAAAAAAAAAAAAACACEAAEAAAAAAAAAAAAAAAAxAAACAAQARAKAAsAAKwBUAAABIiYnJjQ3NzY2MzIWFxYUBwcGIicmNDc3NjQnJiYjIgYHBwYUFxYUBwYGIwciJicmNDc3NjIXFhQHBwYUFxYWMzI2Nzc2NCcmNDc2MhcWFAcHBgYjARQGDAUtLXoWOR8fORYtLTgKGwoKCjgaGg0gEhIgDXoaGgkJBQwHdR85Fi0tOAobCgoKOBoaDSASEiANehoaCQkKGwotLXoWOR8BMwUFLYEuehYXFxYugC44CQkKGwo4GkoaDQ0NDXoaShoKGwoFBe8XFi6ALjgJCQobCjgaShoNDQ0NehpKGgobCgoKLYEuehYXAAAADACWAAEAAAAAAAEACAAAAAEAAAAAAAIAAwAIAAEAAAAAAAMACAAAAAEAAAAAAAQACAAAAAEAAAAAAAUAAQALAAEAAAAAAAYACAAAAAMAAQQJAAEAEAAMAAMAAQQJAAIABgAcAAMAAQQJAAMAEAAMAAMAAQQJAAQAEAAMAAMAAQQJAAUAAgAiAAMAAQQJAAYAEAAMYW5jaG9yanM0MDBAAGEAbgBjAGgAbwByAGoAcwA0ADAAMABAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAH//wAP) format("truetype"); }',e.sheet.cssRules.length)}}this.options=A||{},this.elements=[],e(this.options),this.isTouchDevice=function(){return!!("ontouchstart"in window||window.DocumentTouch&&document instanceof DocumentTouch)},this.add=function(A){var n,o,s,a,r,c,h,l,u,d,f,p=[];if(e(this.options),"touch"===(f=this.options.visible)&&(f=this.isTouchDevice()?"always":"hover"),A||(A="h2, h3, h4, h5, h6"),0===(n=t(A)).length)return this;for(i(),o=document.querySelectorAll("[id]"),s=[].map.call(o,function(A){return A.id}),r=0;r<n.length;r++)if(this.hasAnchorJSLink(n[r]))p.push(r);else{if(n[r].hasAttribute("id"))a=n[r].getAttribute("id");else if(n[r].hasAttribute("data-anchor-id"))a=n[r].getAttribute("data-anchor-id");else{u=l=this.urlify(n[r].textContent),h=0;do{void 0!==c&&(u=l+"-"+h),c=s.indexOf(u),h+=1}while(-1!==c);c=void 0,s.push(u),n[r].setAttribute("id",u),a=u}a.replace(/-/g," "),(d=document.createElement("a")).className="anchorjs-link "+this.options.class,d.href="#"+a,d.setAttribute("aria-label",this.options.ariaLabel),d.setAttribute("data-anchorjs-icon",this.options.icon),"always"===f&&(d.style.opacity="1"),""===this.options.icon&&(d.style.font="1em/1 anchorjs-icons","left"===this.options.placement&&(d.style.lineHeight="inherit")),"left"===this.options.placement?(d.style.position="absolute",d.style.marginLeft="-1em",d.style.paddingRight="0.5em",n[r].insertBefore(d,n[r].firstChild)):(d.style.paddingLeft="0.375em",n[r].appendChild(d))}for(r=0;r<p.length;r++)n.splice(p[r]-r,1);return this.elements=this.elements.concat(n),this},this.remove=function(A){for(var e,i,n=t(A),o=0;o<n.length;o++)(i=n[o].querySelector(".anchorjs-link"))&&(-1!==(e=this.elements.indexOf(n[o]))&&this.elements.splice(e,1),n[o].removeChild(i));return this},this.removeAll=function(){this.remove(this.elements)},this.urlify=function(A){var t=/[^A-Za-z0-9._-]/g;return this.options.truncate||e(this.options),A.trim().replace(/\'/gi,"").replace(t,"-").replace(/-{2,}/g,"-").substring(0,this.options.truncate).replace(/^-+|-+$/gm,"").toLowerCase()},this.hasAnchorJSLink=function(A){var e=A.firstChild&&(" "+A.firstChild.className+" ").indexOf(" anchorjs-link ")>-1,t=A.lastChild&&(" "+A.lastChild.className+" ").indexOf(" anchorjs-link ")>-1;return e||t||!1}}});
+
+  new AnchorJS({
+    placement: 'left',
+    truncate: 32,
+    visible: 'hover',
+  }).add('h2');
+
+  new AnchorJS({
+    icon: '¶',
+    placement: 'left',
+    truncate: 32,
+    visible: 'hover',
+  }).add('p');
+</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Significance Tests within Black-Box Models: Explorations and Challenges – Stack Separating – There is nothing more practical than a good theory</title>
+
+        <meta charset="utf-8" />
+    <meta content='text/html; charset=utf-8' http-equiv='Content-Type'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>
+
+    
+    <meta name="description" content="This post delves into the motivations and observations of applying significance tests to black-box models, highlighting both the potential insights and the challenges faced.
+" />
+    <meta property="og:description" content="This post delves into the motivations and observations of applying significance tests to black-box models, highlighting both the potential insights and the challenges faced.
+" />
+    
+    <meta name="author" content="Stack Separating
+" />
+
+    
+    <meta property="og:title" content="Significance Tests within Black-Box Models: Explorations and Challenges
+" />
+    <meta property="twitter:title" content="Significance Tests within Black-Box Models: Explorations and Challenges
+" />
+    
+
+    
+
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link rel="stylesheet" type="text/css" href="/blog/style.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
+    <link rel="alternate" type="application/rss+xml" title="Stack Separating - There is nothing more practical than a good theory" href="/blog/feed.xml" />
+    <!--Google fonts: See this article for changing fonts: http://sebrink.de/Google-Webfonts-for-my-Jekyll/ -->
+    <!-- <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Code+Pro|Vollkorn+SC|Vollkorn:400,400i&display=swap" rel="stylesheet"> -->
+    <!--
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Lato:wght@700;900&family=Source+Code+Pro:wght@500&family=Dela+Gothic+One&family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">     
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono&family=Lato:wght@700&family=Marcellus&family=Vollkorn:ital@1&display=swap" rel="stylesheet">
+    <!-- Shortcut Icon / Favicon-->
+    <!-- <link rel="shortcut icon" type="image/png" href="/blog/images/favicon-196x196.png">
+    <link rel="shortcut icon" sizes="196x196" href="/blog/images/favicon-196x196.png"> -->
+
+
+    <!-- Created with Jekyll Now - http://github.com/barryclark/jekyll-now -->
+  </head>
+
+  <body>
+    <div class="wrapper-masthead">
+      <div class="container">
+        <header class="masthead clearfix">
+          <!-- <a href="/blog/" class="site-avatar"><img src="" /></a> -->
+
+          <div class="site-info">
+            <h1 class="site-name"><a href="/blog/"><p>Stack Separating</p>
+</a></h1>
+            <p class="site-description"><p>There is nothing more practical than a good theory</p>
+</p>
+          </div>
+
+          <nav>
+            <!-- <a href="/blog/">Recent</a> -->
+            <!-- <a href="https://ko-fi.com/geoant">Buy &#x2615;</a> -->
+            <a href="/blog/archive">Date</a>
+            <a href="/blog/tags">Tag</a>
+            <a href="/blog/about">About</a>
+            <!-- <a href="/blog/feed.xml">Feed</a> -->
+          </nav>
+        </header>
+      </div>
+    </div>
+
+    <div id="main" role="main" class="container">
+      <article class="post">
+  <h1 class="page-title"><p>Significance Tests within Black-Box Models: Explorations and Challenges</p>
+</h1>
+  
+
+  <!-- the support banner-->
+  <div class="date" style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <!-- Left: Banner Image -->
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+      
+      <div style="text-align: right;">
+          Posted 2024-10-29 
+      </div>
+  </div>
+
+  
+
+  <div class="entry">
+    <p>This post delves into the motivations and observations of applying significance tests to black-box models, highlighting both the potential insights and the challenges faced.</p>
+
+<h2 id="introduction-and-background">Introduction and Background</h2>
+
+<p>For someone with no statistical background, the most direct approach to measuring a component’s significance is to remove it from the current system and compare the resulting changes. When the potential significance is large, we can simply visually represent the observable effect through simple data visualization. This approach is particularly effective when the effect is substantial, as it is simple, effective, and highly persuasive. However, in numerous real-world applications and scientific experiments, the “effects” or “improvements” are often very small, making it difficult to make a definitive YES or NO judgment. In such cases, significance tests prove to be valuable tools. In other words, significance tests provide a logically rigorous and more finely sensitive metric, enabling the detection of more positive findings and controlling the required Type I error.</p>
+
+<!-- In fact, not all hypotheses require significance tests. For instance, given the potential significance is large, we can visually represent the observable effect through simple data visualization, thus rendering the use of statistical significance tests unnecessary. However, in numerous real-world applications and scientific experiments, the “effects” or “improvements” are often very small, making it difficult to make a definitive YES or N O judgment. In such cases, significance tests prove to be valuable tools. In a other word, significance tests provide a logically rigorous and more finely sensitive metric, enabling the detection of more positive findings and controlling the required Type I error.  -->
+
+<p>In many applications, significance tests can be roughly interpreted as: if the experimental covariate (or feature) \(\mathbf{X}\) has effect to the outcome \(Y\) given the covariates \(\mathbf{Z}\). In scientific application, the focus lies on establishing the relationship between covariate \(\mathbf{X}\) and the outcome \(Y\), while taking into account the influence of \(\mathbf{Z}\). Machine learning (ML) is also concerned with this test: whether the variable \(\mathbf{Z}\) is sufficient, in terms of \((\mathbf{X}, \mathbf{Z})\), for predicting the outcome \(Y\).</p>
+
+<p>Next, how should we formulate the concept of “effect”? A commonly utilized and elegant metric is conditional independence:</p>
+
+\[\mathbf{X} \perp Y \mid \mathbf{Z}.\]
+
+<p>When the assumption of conditional independence holds, it is straightforward to assert that the covariate \(\mathbf{X}\) has no effect on the outcome \(Y\) given the context provided by \(\mathbf{Z}\).</p>
+
+<p>However, practitioners have identified certain practical applications where they perceive the hypothesis of conditional independence to be overly restrictive. Specifically, in many real-world scenarios, the focus may shift towards assessing the value that a variable \(\mathbf{X}\) can provide to \(Y\) in specific performance criteria (which may enhance the testing power). For instance, in regression analysis, the emphasis may lie in determining whether \(\mathbf{X}\) enhances predictive accuracy in terms of the conditional expectation \(\mathbb{E}( Y \mid \mathbf{X}, \mathbf{Z})\) compared to a model relying solely on \(\mathbf{Z}\), that is, \(\mathbb{E}(Y \mid \mathbf{Z})\).</p>
+
+<!-- Conversely, the case where $$\mathbf{X}$$ only effects variance without improving overall predictive power may be perceived as less important in practical contexts[^1]. -->
+
+<!-- [^1]: Credit is owed to Prof. Wei Pan for this perspective. -->
+
+<p>Taken together, significance tests are essential for not only facilitating scientific discoveries but also for a variety of statistical methodologies, including relationship identification, modeling, and feature selection. While the conditional independence is an elegant and widely-used hypothesis, yet there also exist numerous tests that focus on the necessary conditions of conditional independence.</p>
+
+<h2 id="the-elegance-and-limitations-of-significance-tests-in-linear-models">The Elegance and Limitations of Significance Tests in Linear Models</h2>
+
+<p>For conducting significant tests, it is typical to begin by formulating a model for the data, with linear models often being the straightforward, simple, and effective choice for many scenarios. This is represented as:</p>
+
+\[\begin{equation}
+ Y = \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_d X_d + \epsilon,
+\tag{1.1}
+\end{equation}\]
+
+<p>where \(\mathbf{\beta} \in \mathbb{R}^d\) denotes the vector of linear coefficients, and \(\epsilon\) represents the error term which is independent with \(\mathbf{X}\). Under the model assumption (1.1), the conditional independence of one feature given the others is equivalent to if the linear coefficient is zero, that is,</p>
+
+\[X_j \perp Y \mid \mathbf{Z} = \mathbf{X}_{-j} \quad \iff  \quad \beta_j = 0. \tag{1.2}\]
+
+<p>Therefore, within linear models, (1.2) offers a direct and practical motivation for conducting significant tests: by directly performing statistical inference on the coefficient \(\beta_j\). This probably the most important strength of conducting significance tests based on linear models. Nevertheless, its primary limitation stems from the increasing inefficiency (compared with deep learning models) of the linear model assumptions in more complex data settings.</p>
+
+<h3 id="limitations">Limitations</h3>
+<p>Since reasonable data/model assumptions are crucial for most significance tests, it is essential to verify these assumptions before conducting the tests to ensure the reliability of the results based on the underlying data models. In practice, assessing the assumptions of data models can be challenging. One approach is to evaluate the prediction performance using a standard machine learning evaluation routine, such as train-test data splitting or cross-validation: training the model on the training set and evaluating it on the testing set. If the model is closer to the ground truth, it tends to deliver better prediction performance. Toward this end, let’s check the empirical performance in real applications.</p>
+
+<blockquote class="block-box">
+  <p><strong>Observation 1</strong>: In complex data settings, such as industrial data and medical applications, DL models demonstrate significant numerical advantages over traditional machine learning approaches in terms of prediction performance.</p>
+</blockquote>
+
+<p>This has been extensively validated by numerous experiments, with one such finding being represented here for illustration.</p>
+
+<blockquote class="block-caption">
+  <div class="l-body">
+<img src="https://s3.amazonaws.com/media-p.slid.es/uploads/2070857/images/11708483/sp_dl.png" style="width: 38vw; min-width: 330px;" />
+</div>
+  <p>Anding, Katharina, et al. “Comparison of the performance of innovative deep learning and classical methods of machine learning to solve industrial recognition tasks.” Photonics and Education in Measurement Science. SPIE, 2019.</p>
+</blockquote>
+
+<p>Next, we turn to the observation regarding the complexity of DL models.</p>
+
+<blockquote class="block-box">
+  <p><strong>Observation 2</strong>: For complex datasets, it appears that larger models (with more parameters) potentially provide better performance.</p>
+</blockquote>
+
+<blockquote class="block-caption">
+  <div class="l-body">
+<img src="https://s3.amazonaws.com/media-p.slid.es/uploads/2070857/images/11174814/pasted-from-clipboard.png" style="width: 38vw; min-width: 330px;" />
+</div>
+  <p>Tan, M., &amp; Le, Q. (2019, May). <a href="http://proceedings.mlr.press/v97/tan19a/tan19a.pdf">Efficientnet: Rethinking model scaling for convolutional neural networks</a>. In International Conference on Machine Learning. PMLR.</p>
+</blockquote>
+
+<p>In contrast to traditional machine learning models, the empirical observations suggest that overparameterized deep learning models do not necessarily suffer from overfitting; on the contrary, models with extremely large numbers of parameters are widely used and have achieved remarkable performance in practice.</p>
+
+<!-- > <ins>Remark</ins>. For tabular data, the advantages of DL models is not quite obvious compared with random forest and gradient boosting. Thus, to investigate DL models or utilize the DL models, it is very important to put it into the content of complex datasets.
+{: .block-box } -->
+
+<p>Motivated by empirical observations, a natural question arises: “<em>Can we conduct significance tests based on DL models for data formulation?</em>” This blog aims to provide some insights into this question.</p>
+
+<h2 id="dl-data-models-and-some-empirical-observation">DL: Data, Models and some Empirical Observation</h2>
+<p>Given a new nature of both data and models, in this section, we will enumerate and explain the <em>challenges</em> posed by this frontier in statistical tests, which will aid us in formulating a new paradigm for significance testing.</p>
+
+<p>Note that this is a completely new problem, and any intuition derived from traditional statistical theory may be misleading. Instead, we probably should rely on empirical evidence and objective data-driven insights.</p>
+
+<h3 id="nature-of-black-box">Nature of Black-box</h3>
+<p>DL models are often referred to as “black-box” models, likely due to two reasons. Firstly, the model is difficult to interpret or explain. In contrast to linear models, where each linear coefficient corresponds to feature importance, DL models typically contain a large number of parameters and various ad-hoc architectures, the direct correspondence between features and model parameters does not exist in large real practical models, making it challenging to explain the relationship between inputs and outcomes. Therefore, despite achieving peak performance, DL models struggle to provide reliable insights, which significantly hinders their adoption in serious applications, such as medical research and healthcare. Secondly, extremely large models with a black-box setting have become increasingly popular in real-world applications, particularly in NLP using Large Language Models (LLMs). These models are <em>physically</em> black-box, as they only provide outputs given inputs, without allowing access to their architecture, parameters, or training data, making it impossible or extremely costly to understand their inner workings.</p>
+
+<h3 id="overparametrized-models">Overparametrized models</h3>
+
+<p>This characteristic is related to the phenomenon we indicated in <strong>Observation 2</strong>. It appears that larger models consistently demonstrate better performance capabilities. Alternatively, overfitting is not as severe as we imagined for large models. This phenomenon is quite surprising for statisticians. According to classical statistical learning theory (SLT), the generalization error (which can be simply regarded as the testing error) is decomposed into approximation error and estimation error. The approximation error measures the distance between the specified functional space and the ground truth, while the estimation error qualifies the difficulty of estimating a function in the specified functional space. On this basis, larger models reduce the approximation error but increase the estimation error. Thus, this theory explains why we observe a “U” curve in the model capability versus test error plot. However, the “U” curve does not exist in deep learning (DL) models with image and text datasets, where increasing the layers or parameters does not lead to extreme degradation in performance; instead, it sometimes even improves performance.</p>
+
+<blockquote class="block-caption">
+  <p><img class="" data-natural-width="1480" data-natural-height="700" data-lazy-loaded="" src="https://s3.amazonaws.com/media-p.slid.es/uploads/2070857/images/11174463/Screenshot_2024-03-07_at_10.10.46_PM.png" style="width: 38vw; min-width: 330px;" /></p>
+
+  <p>Neyshabur, B., Li, Z., Bhojanapalli, S., LeCun, Y., &amp; Srebro, N. (2018). <a href="https://arxiv.org/abs/1805.12076">Towards understanding the role of over-parametrization in generalization of neural networks</a>. arXiv preprint arXiv:1805.12076.</p>
+</blockquote>
+
+<p>Even more intriguing is that the scale of DL models can grow to perfectly fit the training data, yet they still deliver impressive performance on test data. This is astonishing from a classical SLT perspective. However, whether you like it or not, overparameterized models have become the mainstream of DL models and have been proven to be remarkably effective in modern applications.</p>
+<h3 id="significance-of-patterns">Significance of patterns</h3>
+
+<p>The point is attributed to the new structure of the data. In classical tabular data, a major interest is to examine the significance of features, which specifically refer to columns of tabular data (and, furthermore, correspond to some model parameters if certain model assumptions are made, as in (1.2)). This is because each instance of tabular data is well-structured, and thus, a feature is well-aligned across all instances. However, this property does not exist in more complex data settings.</p>
+
+<p>For example, in image data, “background” and “object” pixels can be located anywhere in the image; similarly, in text data, important words can occur anywhere in the sentence. Therefore, formulating significance tests based on feature columns or locations, may not be entirely sensible. A more reasonable approach seems to be specifying particular <em>patterns</em>; then, we can examine the <strong>significance of patterns</strong> through hypothesis testing, where the null hypothesis can be formulated as:</p>
+
+\[\mathbf{X}_{S(\mathbf{X})} \perp Y \mid \mathbf{Z} = \mathbf{X}_{-S(\mathbf{X})}, \tag{2.2}\]
+
+<p>where \(S(\mathbf{X})\) is a “pattern” which provided based on \(\mathbf{X}\). We then illustrate this concept through the following two examples. Note that \(\mathbf{Z}\) can be generated by {removing / permuting / replacing independent noise} of \(S(\mathbf{X})\) in \(\mathbf{X}\), since equation (2.2) remains valid under these operations.</p>
+
+<p>Note that \(\mathbf{Z}\) can be generated by {removing / permuting / replacing by independent noise } \(S(\mathbf{X})\) from \(\mathbf{X}\), since (2.2) is continued to be hold for those operating.</p>
+
+<blockquote class="block-caption">
+  <p><img class="" data-natural-width="1480" data-natural-height="700" data-lazy-loaded="" src="https://s3.amazonaws.com/media-p.slid.es/uploads/2070857/images/11450653/FER2013.png" style="width: 38vw; min-width: 330px;" /></p>
+
+  <p>Demostrative images in <a href="https://www.kaggle.com/c/challenges-in-representation-learning-facial-expression-recognition-challenge/data">FER2013</a> (Facial Expression Recognition 2013) dataset.</p>
+</blockquote>
+
+<p><strong>Example 1.</strong> The <a href="https://www.kaggle.com/c/challenges-in-representation-learning-facial-expression-recognition-challenge/data">FER2013</a> (Facial Expression Recognition 2013) dataset comprises images with categorical labels describing the emotion of the individual depicted. Specifically, the dataset consists of 48×48 pixel grayscale images, categorized into seven distinct emotions: Angry, Disgust, Fear, Happy, Sad, Surprise, and Neutral. By using some mature neural networks, such as VGG and ResNet, a prediction accuracy of &gt;=70% can be achieved, see <a href="https://paperswithcode.com/sota/facial-expression-recognition-on-fer2013">Leaderboard</a>.</p>
+
+<p>A sensible hypothesis based on this dataset could be if <em>the mouth region makes a significant contribution to the prediction of facial emotions</em>.</p>
+
+<p><strong>Example 2.</strong> The <a href="https://nlp.stanford.edu/sentiment/">SST-2</a> (Stanford Sentiment Treebank) dataset comprises 11,855 single sentences extracted from movie reviews, with each phrase annotated as either negative or positive. By using BERT-like models, a prediction accuracy of &gt;=96% can be achieved, see <a href="https://paperswithcode.com/sota/sentiment-analysis-on-sst-2-binary">Leaderboard</a>.</p>
+
+<p>A sensible hypothesis based on this dataset could be that <em>the removal of stop words does not significantly impact sentiment prediction</em>.</p>
+
+<p>Therefore, under the new formulation with <em>significance of patterns</em> in (2.2), we can observe substantial potential for conducting significance tests by integrating techniques from image and text segmentation, localization, and skeleton detection.</p>
+
+<blockquote class="block-caption">
+  <p><strong>Remark.</strong> Additionally, I also had a very interesting observation for linear model assumption on image datasets. As is commonly known, in most image tasks, particularly those involving high-resolution images, the effect of a single pixel is essentially zero or negligible. This implies that equation (2.1) holds true for any single pixel \(j\). Consequently, if we formulate image data using the linear model (1.1), we can conclude that \(\beta_j = 0\) for all \(j\). According to the equivalence indicated in (1.2), this leads to \(Y = \epsilon\), which is clearly incorrect. This observation further suggests that the linear assumption is inappropriate for image data.</p>
+</blockquote>
+
+<h2 id="formulation-based-on-empirical-evidence">Formulation based on Empirical Evidence</h2>
+
+<p>As indicated in the previous section, we observed that DL models exhibit some experimental phenomena that are fundamentally different from those of parametrized models, and they may hold enormous potential in significance testing. Thus, let us provisionally accept (2.2) as our hypothesis test and explore the challenges that we are likely to encounter.</p>
+
+<p>First, as demonstrated by Lemma 1 in (Dai et al. 2022<sup id="fnref:dai2022significance" role="doc-noteref"><a href="#fn:dai2022significance" class="footnote" rel="footnote">1</a></sup>), (2.2) is equivalent to the <em>risk invariance test</em> when log-likelihood is employed as the loss function, that is,</p>
+
+\[R(p) = - \mathbb{E} \log p(Y \mid \mathbf{X}), \quad R_S(q) = - \mathbb{E} \log q(Y \mid \mathbf{Z})\]
+
+<p>Then, the equivalent hypothesis is as follows.</p>
+
+<blockquote class="block-box">
+  <p><strong>Lemma 1 (Dai et al. 2022<sup id="fnref:dai2022significance:1" role="doc-noteref"><a href="#fn:dai2022significance" class="footnote" rel="footnote">1</a></sup>).</strong> The conditional independence (2.2) is equivalent to: 
+\begin{equation}
+R^* := \min_p R( p ) = \min_q R_S( q ) =: R_S^*, \nonumber
+\end{equation}
+where \(p\) and \(q\) are measurable conditional probabilites of \(Y \lvert  \mathbf{X}\) and \(Y  \lvert  \mathbf{Z}\), respectively.</p>
+</blockquote>
+
+<p>Lemma 1 successfully transforms the conditional independence test into a comparison between two metrics. An intuitive interpretation is that \(R^*\) represents the optimal likelihood score attainable using the full feature set \(\mathbf{X}\), while \(R^*_S\) denotes the optimal likelihood score achievable using the subset of features \(\mathbf{Z}\). If these two quantities are equal, it implies that the subset of features \(\mathbf{Z}\) captures all the relevant information for modeling \(Y\).</p>
+
+<blockquote class="block-caption">
+  <p>Note. Here, we assume that \(\mathbf{Z}\) is a sub-feature of \(\mathbf{X}\), if not, we can append \(\mathbf{Z}\) and \(\mathbf{X}\) together as a new \(\mathbf{X}\).</p>
+</blockquote>
+
+<blockquote class="block-caption">
+  <p><strong>Remark.</strong> Lemma 1 in (Dai et al. 2022<sup id="fnref:dai2022significance:2" role="doc-noteref"><a href="#fn:dai2022significance" class="footnote" rel="footnote">1</a></sup>) provides results for a general <em>risk invariance test</em>. As mentioned in the previous section, conditional independence may be too strong. In this case, other loss functions can be used, such as the L2 loss if we are interested in the different between \(\mathbb{E}(Y \mid \mathbf{X})\) and \(\mathbb{E}(Y \mid \mathbf{Z})\).</p>
+</blockquote>
+
+<p>Next, we naturally require estimates of \(R^*\) and \(R^*_{S}\). A direct approach is to find the optimal \(\hat{p}_n\) and \(\hat{q}_n\) through empirical risk minimization (ERM) of \(R\) and \(R_{S}\):</p>
+
+\[\hat{p}_n = \text{argmin}_{p} - \frac{1}{n} \sum_{i=1}^n \log p(y_i \mid \mathbf{x}_i), \quad  \hat{q}_n = \text{argmin}_{q} - \frac{1}{n} \sum_{i=1}^n \log p(y_i \mid \mathbf{z}_i),\]
+
+<p>and then empirically evaluate them.</p>
+
+<p>A natural question that arises is <em>whether sample splitting is necessary</em>. If not, we can simply evaluate the estimators \(\hat{p}_n\) and \(\hat{q}_n\) using the training data \((\mathbf{x}_i, \mathbf{z}_i, y_i)\), analogous to the LRT. If yes, an additional testing / inference set is required to assess the performance of \(\hat{p}_n\) and \(\hat{q}_n\).</p>
+
+<p>The following figure in (Zhang et al. 2021<sup id="fnref:zhang2021understanding" role="doc-noteref"><a href="#fn:zhang2021understanding" class="footnote" rel="footnote">2</a></sup>) provides the answer, which reveals an intriguing experimental phenomenon in deep learning: <em>deep neural networks can easily fit random labels, shuffled pixels, random pixels, or noisy pixels</em>. In our context, we need to compare the performance with and without a certain pixel pattern. If we only evaluate on the training data, it is likely that we will end up with two overfitting neural networks, both with training losses close to zero. One piece of good news is that the testing error remains reasonable (Indeed, noisy / random / shuffled pixels do harm the testing performance); see the detailed results in the paper.</p>
+
+<blockquote class="block-caption">
+  <p><img class="" data-natural-width="480" data-natural-height="438" data-lazy-loaded="" src="https://s3.amazonaws.com/media-p.slid.es/uploads/2070857/images/10474127/pasted-from-clipboard.png" style="width: 30vw; min-width: 330px;" /></p>
+
+  <p>Zhang, C., Bengio, S., Hardt, M., Recht, B., &amp; Vinyals, O. (2021). <a href="https://dl.acm.org/doi/abs/10.1145/3446776">Understanding deep learning (still) requires rethinking generalization</a>. <em>Communications of the ACM</em>, <em>64</em>(3), 107-115.</p>
+</blockquote>
+
+<p>Therefore, the most practical reasonable solution is: split data as estimation and inference parts, estimate \(\hat{p}_n\) and \(\hat{q}_n\) from estimation dataset (index set \(\mathcal{I}\) with size \(n\)), and evaluate them in an independent inference dataset (index set \(\mathcal{J}\) with size \(m\)):</p>
+
+\[T_{n,m} = \hat{R}_m(\hat{p}_n) - \hat{R}_{S,m}(\hat{q}_n) \quad \to \quad R^* - R_S^*.\]
+
+<p>Our main idea is to use the left side (an empirical metric, we can get) to estimate the right side (the population metric, we want to infer). Additionally, we need to consider its asymptotic distribution. To proceed, we can decompose the empirical metric as follows:</p>
+
+\[\begin{align*}
+T_{n,m} &amp; = \underbrace{\hat{R}_m(\hat{p}_n) - R(\hat{p}_n) + R_S(\hat{q}_n) - \hat{R}_{S,m}(\hat{q}_n)}_{T_1} \\
+&amp; + \underbrace{ R(\hat{p}_n) - R^* + R^*_S - R_S(\hat{q}_n)}_{T_2} + \underbrace{R^* - R_S^*}_{T_3} \tag{3.2}
+\end{align*}\]
+
+<p>The motivation for this decomposition is straightforward: to establish a connection with the population by adding and subtracting terms from the empirical metric. Under the decomposition given in (3.2), we can decompose \(T_{n,m}\) into \(T_1\), \(T_2\), and \(T_3\) components, and we will examine each term separately.</p>
+
+<ul>
+  <li>\(T_1\) is a conditional i.i.d. average.</li>
+</ul>
+
+\[T_1 =  \hat{R}_m(\hat{p}_n) - R(\hat{p}_n) + R_S(\hat{q}_n) - \hat{R}_{S,m}(\hat{q}_n) = \frac{1}{m} \sum_{j \in \mathcal{J}} \Big( \Delta_{n,j} - \mathbb{E}( \Delta_{n,j} \mid \hat{p}_n ) \Big),\]
+
+<p>where \(\Delta_{n,j} = l \big(y_j, \hat{p}_n(\mathbf{x}_j) \big) - l \big(y_j, \hat{q}_n(\mathbf{z}_j) \big)\) is the differenced evaluation of  \(\hat{p}_n\) and \(\hat{q}_n\) based on testing sample \((\mathbf{x}_j, \mathbf{z}_j, y_j)\). \(T_1\) seems is a triangular array with the typical conditional iid average, and by invoking the central limit theorem for triangular arrays (see Corollary 9.5.11 in (Cappe et al. 2006<sup id="fnref:cappe2006inference" role="doc-noteref"><a href="#fn:cappe2006inference" class="footnote" rel="footnote">3</a></sup>)), we can establish that it converges to a normal distribution.</p>
+
+<ul>
+  <li>\(T_2\) converges to zero in probability.</li>
+</ul>
+
+\[T_2 =  R(\hat{p}_n) - R^* + R^*_S - R_S(\hat{q}_n) = O_P(n^{-\gamma}),\]
+
+<p>The term \(T_2\) represents the standard <em>excess risk</em> for ERM, and it can be shown that \(T_2\) converges to zero in probability. Existing results also have established the convergence rate with order \(\gamma &gt; 0\) of \(T_2\). These results typically require that the ground-truth satisfies certain regularity conditions, such as smoothness, but unfortunately, these conditions are often impossible to verify. Yet, most importantly, we have observed that DL has delivered exceptionally good performance in practice, make it more reliable than classical model assumptions. We roughly believe that this condition is reasonable, at least for those models that exhibit excellent performance, but the exact value of \(\gamma\) is unknown in practice. However, it must be acknowledged that this condition is difficult to verify.</p>
+
+<ul>
+  <li>\(T_3 = 0\) under the null hypothesis.</li>
+</ul>
+
+<p>The term \(T_3 = R^* - R_S^*\) is the simplest, which equals zero under the null hypothesis.</p>
+
+<p>So far, everything appears to be proceeding smoothly. Specifically, \(T_1\) follows a normal distribution, \(T_2\) converges to zero in probability, and \(T_3\) equals zero under the null hypothesis. Hence, let’s standardize \(T_{n,m}\) by the standard deviation (sd) of \(T_1\), and we anticipate that it will follow a standard normal distribution \(N(0,1)\).</p>
+
+<p>However, unfortunately, it does not conform to our expectations. Specifically, the normalized \(T_{n,m}\) is written as follows.</p>
+
+\[\widetilde{T}_{n,m} = \frac{\sqrt{m}}{\hat{\sigma}_{n,m}} T_1 + \frac{\sqrt{m}}{\hat{\sigma}_{n,m}} T_2 + \frac{\sqrt{m}}{\hat{\sigma}_{n,m}} T_3,\]
+
+<p>where \(\hat{\sigma}_{n,m}\) is a sample standard deviation of differenced evaluations on the inference set, that is, \(\Delta_{n,j}\) for \(j \in \mathcal{J}\) conditional on \(\hat{p}_n\) and \(\hat{q}_n\) are given.</p>
+
+<p>Next, we will discuss three very interesting phenomenon and issues of \(\widetilde{T}_{n,m}\) below.</p>
+<h3 id="dirac-mass-bias-sd-ratio-and-sample-splitting-ratio">Dirac-mass, Bias-sd Ratio and Sample-splitting Ratio</h3>
+
+<p>Firstly, an unusual phenomenon: \(T_1\) may degenerate into a Dirac mass under certain circumstances. For example, under the null hypothesis \(H_0\), we have \(p^* = p_{Y \mid \mathbf{X}} = p_{Y \mid \mathbf{Z}} = q^*.\) Hence, under some conditions,</p>
+
+\[\hat{p}_n \to p^*, \quad \hat{q}_n \to p^*, \quad n \to \infty, \quad \text{in probability}.\]
+
+<p>On this ground, \(\Delta_{n,j} = l_j(\hat{p}_n) - l_j(\hat{q}_n) \to 0\) for all \(j \in \mathcal{J}\) and \(\hat{\sigma}^2_{n,m} \to 0\) in prob. Thus, we find that, under the null hypothesis \(H_0\), \(T_1\) degenerates into a <em>Dirac-mass</em> at 0. Such a result appears to violate the conditions of the triangular array CLT, as it typically requires that \(\hat{\sigma}^2_{n,m} \to \sigma^2 &gt; 0\) in prob (see Corollary 9.5.11 in (Cappe et al. 2006<sup id="fnref:cappe2006inference:1" role="doc-noteref"><a href="#fn:cappe2006inference" class="footnote" rel="footnote">3</a></sup>)).</p>
+
+<p>Furthermore, this phenomenon also gives rise to <ins>two issues</ins> concerning \(T_2\).</p>
+
+<ul>
+  <li><strong>Bias-sd Ratio</strong></li>
+</ul>
+
+<p>Based on the previous discussion, let’s assume \(T_2 = O_P(n^{-\gamma})\), then the normalized \(T_2\):</p>
+
+\[\frac{\sqrt{m}}{\hat{\sigma}_{n,m}} T_2 = O_P( \frac{\sqrt{m} n^{-\gamma}}{\hat{\sigma}_{n,m}}).\]
+
+<p>Since \(T_2\) itself represents a certain bias of the non-parametric model under finite samples, and then is normalized by the standard deviation, we refer to this term as the <em>bias-sd ratio</em>. Since \(\hat{\sigma}_{n,m} = o_P(1)\) and \(\gamma\) is unknown, it is entirely possible that the bias-sd  ratio does not converge to zero in probability. Therefore, this introduces an <em>unestimable nonvanishing bias-sd ratio</em> into the null distribution \(N(0,1)\) in our initial expectation.</p>
+
+<ul>
+  <li><strong>Sample-splitting Ratio</strong></li>
+</ul>
+
+<p>Additionally, another key observation is that the <em>sample-splitting ratio</em>, namely the ratio of \(n\) to \(m\), has a significant impact on the convergence of the bias-sd ratio. This finding is consistent with empirical evidence, as it is often observed that changing the sample-splitting ratio can lead to drastically different results.</p>
+
+<p>A safe choice is to make \(n\) as large as possible, thereby ensuring that the bias-sd ratio vanishes. However, provided that the correctness of the test is ensured, we prefer \(m\) to be as large as possible to increase the power. Therefore, a dilemma arises: the power of this test statistic is determined by \(m\), how to tradeoff the sample-splitting ratio, so that we maximize the test power while maintaining test validity.</p>
+
+<ul>
+  <li><strong>Summary</strong></li>
+</ul>
+
+<p>Therefore, if we follow the previous idea to construct a test statistic similar to the LRT with a normal null distribution, we need to address the following questions.</p>
+<ol>
+  <li>How can we establish a results for CLT when \(\hat{\sigma}_{n,m}\) <em>vanishes</em> in probability? or find the <em>correct scale</em> of the variance in a finite-sample situation.</li>
+  <li>When \(\gamma\) is unknown, how can we guarantee that the <em>bias-sd ratio</em> converges to zero in probability?</li>
+  <li>What is a reasonable <em>sample-splitting ratio</em> that ensures an asymptotic distribution and maximize the testing power?</li>
+</ol>
+
+<h2 id="ending">Ending</h2>
+
+<p>This blog post aims to introduce some background and challenges of black-box tests, presenting a straightforward and intuitive idea to tackle them. The content primarily recaps the exploration and process of our paper (Dai et al. 2022<sup id="fnref:dai2022significance:3" role="doc-noteref"><a href="#fn:dai2022significance" class="footnote" rel="footnote">1</a></sup>) (we provide also a potential solution to address questions Q1-Q3).</p>
+
+<p>The primary goal is to “<em><a href="https://zh.wikipedia.org/zh-cn/%E6%8A%9B%E7%A0%96%E5%BC%95%E7%8E%89">cast a brick to attract jade</a></em>,” sparking a thought-provoking discussion that will hopefully inspire more brilliant minds to get involved.</p>
+
+<p>Of course, this approach/framework (constructing a LRT-like test; the null distribution from CLT) is not the only way to solve black-box tests, and it also has its limitations. Typically, we currently only obtain asymptotically valid tests, which means that the p-value is correct only when \(n\) approaches infinity. Yet, it appears that even obtaining asymptotically valid tests is not easy at all.</p>
+
+<p>Other approaches I personally appreciate is the purely nonparametric tests framework (similar to permutation tests), which includes the Conditional Randomization Test (CRT; (Candes et al. 2018<sup id="fnref:candes2018panning" role="doc-noteref"><a href="#fn:candes2018panning" class="footnote" rel="footnote">4</a></sup>)) and the more practical Holdout Randomization Test (HRT; (Tansey et al. 2018<sup id="fnref:tansey2018holdout" role="doc-noteref"><a href="#fn:tansey2018holdout" class="footnote" rel="footnote">5</a></sup>)). The major challenge with this approach lies in obtaining the <em>true probability</em> or a <em>real sample</em> of \(\mathbf{Z} \mid \mathbf{X}\).</p>
+
+<p>Furthermore, there are some important references, including but not limited to (Lei et al. 2018<sup id="fnref:lei2018distribution" role="doc-noteref"><a href="#fn:lei2018distribution" class="footnote" rel="footnote">6</a></sup>, Williamson et al. 2023<sup id="fnref:williamson2023general" role="doc-noteref"><a href="#fn:williamson2023general" class="footnote" rel="footnote">7</a></sup>, Kim et al. 2022<sup id="fnref:kim2022local" role="doc-noteref"><a href="#fn:kim2022local" class="footnote" rel="footnote">8</a></sup>, Lundborg 2023<sup id="fnref:lundborg2023modern" role="doc-noteref"><a href="#fn:lundborg2023modern" class="footnote" rel="footnote">9</a></sup>, Cai et al. 2024<sup id="fnref:cai2024test" role="doc-noteref"><a href="#fn:cai2024test" class="footnote" rel="footnote">10</a></sup>) that make significant contributions to and discussion on this problem.</p>
+
+<h2 id="references">References</h2>
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:dai2022significance" role="doc-endnote">
+      <p>Dai, B., Shen, X., &amp; Pan, W. (2022). Significance tests of feature relevance for a black-box learner. IEEE transactions on neural networks and learning systems, 35(2), 1898-1911. <a href="#fnref:dai2022significance" class="reversefootnote" role="doc-backlink">&#8617;</a> <a href="#fnref:dai2022significance:1" class="reversefootnote" role="doc-backlink">&#8617;<sup>2</sup></a> <a href="#fnref:dai2022significance:2" class="reversefootnote" role="doc-backlink">&#8617;<sup>3</sup></a> <a href="#fnref:dai2022significance:3" class="reversefootnote" role="doc-backlink">&#8617;<sup>4</sup></a></p>
+    </li>
+    <li id="fn:zhang2021understanding" role="doc-endnote">
+      <p>Zhang, C., Bengio, S., Hardt, M., Recht, B., &amp; Vinyals, O. (2021). Understanding deep learning (still) requires rethinking generalization. Communications of the ACM, 64(3), 107-115. <a href="#fnref:zhang2021understanding" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:cappe2006inference" role="doc-endnote">
+      <p>Cappe, Olivier and Moulines, Eric and Ryden, Tobias (2006). Inference in Hidden Markov Models. Springer Science &amp; Business Media. <a href="#fnref:cappe2006inference" class="reversefootnote" role="doc-backlink">&#8617;</a> <a href="#fnref:cappe2006inference:1" class="reversefootnote" role="doc-backlink">&#8617;<sup>2</sup></a></p>
+    </li>
+    <li id="fn:candes2018panning" role="doc-endnote">
+      <p>Candes, E., Fan, Y., Janson, L., &amp; Lv, J. (2018). Panning for gold:‘model-X’knockoffs for high dimensional controlled variable selection. Journal of the Royal Statistical Society Series B: Statistical Methodology, 80(3), 551-577. <a href="#fnref:candes2018panning" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:tansey2018holdout" role="doc-endnote">
+      <p>Tansey, W., Veitch, V., Zhang, H., Rabadan, R., &amp; Blei, D. M. (2018). The holdout randomization test: Principled and easy black box feature selection. arXiv preprint arXiv:1811.00645, 1(3). <a href="#fnref:tansey2018holdout" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:lei2018distribution" role="doc-endnote">
+      <p>Lei, J., G’Sell, M., Rinaldo, A., Tibshirani, R. J., &amp; Wasserman, L. (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), 1094-1111. <a href="#fnref:lei2018distribution" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:williamson2023general" role="doc-endnote">
+      <p>Williamson, B. D., Gilbert, P. B., Simon, N. R., &amp; Carone, M. (2023). A general framework for inference on algorithm-agnostic variable importance. Journal of the American Statistical Association, 118(543), 1645-1658. <a href="#fnref:williamson2023general" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:kim2022local" role="doc-endnote">
+      <p>Kim, I., Neykov, M., Balakrishnan, S., &amp; Wasserman, L. (2022). Local permutation tests for conditional independence. The Annals of Statistics, 50(6), 3388-3414. <a href="#fnref:kim2022local" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:lundborg2023modern" role="doc-endnote">
+      <p>Lundborg, A. R. (2023). Modern methods for variable significance testing (Doctoral dissertation). <a href="#fnref:lundborg2023modern" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:cai2024test" role="doc-endnote">
+      <p>Cai, L., Guo, X., &amp; Zhong, W. (2024). Test and measure for partial mean dependence based on machine learning methods. Journal of the American Statistical Association, 1-13. <a href="#fnref:cai2024test" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+
+    <div>
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+    <div>
+  </div>
+    
+  <div>
+    
+    
+      <a href="/blog/tags/#black-box-models" class="post-tag">black-box-models</a>
+    
+      <a href="/blog/tags/#p-value" class="post-tag">p-value</a>
+    
+      <a href="/blog/tags/#significance-tests" class="post-tag">significance-tests</a>
+    
+      <a href="/blog/tags/#significant-patterns" class="post-tag">significant-patterns</a>
+    
+  </div>
+
+  <div>
+  
+    <script src="  https://unpkg.com/showdown/dist/showdown.min.js"></script>
+<script>
+const GH_API_URL = 'https://api.github.com/repos/statmlben/stackseparating/issues/1/comments'; // ?client_id=&client_secret=
+
+let request = new XMLHttpRequest();
+request.open( 'GET', GH_API_URL, true );
+request.onload = function() {
+	if ( this.status >= 200 && this.status < 400 ) {
+		let response = JSON.parse( this.response );
+
+		for ( var i = 0; i < response.length; i++ ) {
+			document.getElementById( 'gh-comments-list' ).appendChild( createCommentEl( response[ i ] ) );
+		}
+
+		if ( 0 === response.length ) {
+			document.getElementById( 'no-comments-found' ).style.display = 'block';
+		}
+	} else {
+		console.error( this );
+	}
+};
+
+function createCommentEl( response ) {
+	let user = document.createElement( 'a' );
+	user.setAttribute( 'href', response.user.url.replace( 'api.github.com/users', 'github.com' ) );
+	user.classList.add( 'user' );
+
+	//let userAvatar = document.createElement( 'img' );
+	let userAvatar = document.createElement( 'a' );
+	userAvatar.classList.add( 'avatar' );
+	userAvatar.innerHTML =  response.user.login +':';
+	//userAvatar.style.fontStyle = "italic";
+
+	user.appendChild( userAvatar );
+
+	let commentLink = document.createElement( 'a' );
+	commentLink.setAttribute( 'href', response.html_url );
+	commentLink.classList.add( 'comment-url' );
+	commentLink.innerHTML = '(#' + response.id + ' - ' + response.created_at+')';
+	commentLink.style.fontSize = "small";
+
+	let commentContents = document.createElement( 'div' );
+	commentContents.classList.add( 'comment-content' );
+	commentContents.innerHTML = response.body;
+	// Progressive enhancement.
+	if ( window.showdown ) {
+		let converter = new showdown.Converter();
+		commentContents.innerHTML = converter.makeHtml( response.body );
+	}
+
+	let comment = document.createElement( 'li' );
+	comment.setAttribute( 'data-created', response.created_at );
+	comment.setAttribute( 'data-author-avatar', response.user.avatar_url );
+	comment.setAttribute( 'data-user-url', response.user.url );
+
+	comment.appendChild( user );
+	comment.appendChild( commentContents );
+	comment.appendChild( commentLink );
+
+	return comment;
+}
+request.send();
+</script>
+
+
+<div class="github-comments">
+	<h1>Comments</h1>
+	<ul id="gh-comments-list"></ul>
+	<p id="no-comments-found">You can comment on this post using your GitHub account.</p>
+	<p id="leave-a-comment">Join the discussion for this article on <a href="https://github.com/statmlben/stackseparating/issues/1">this ticket</a>. Comments appear on this page instantly.</p>
+</div>
+
+  
+
+  
+    <script type="text/javascript">
+window.MathJax = {
+  tex: {
+    packages: ['base', 'ams', 'boldsymbol', 'require']
+  },
+  loader: {
+    load: ['ui/menu', '[tex]/ams', '[tex]/boldsymbol' ,'[tex]/require']
+  },
+  startup: {
+    ready() {
+      MathJax.startup.defaultReady();
+      const Macro = MathJax._.input.tex.Symbol.Macro;
+      const MapHandler = MathJax._.input.tex.MapHandler.MapHandler;
+      const Array = MathJax._.input.tex.ams.AmsMethods.default.Array;
+      const env = new Macro('psmallmatrix', Array, [null, '(', ')', 'c', '.333em', '.2em', 'S', 1]);
+      MapHandler.getMap('AMSmath-environment').add('psmallmatrix', env);
+    }
+  }
+};
+</script>
+<script type="text/javascript" id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"> 
+<!-- replace with this for local mathjax support (for drafting without internet). DON'T PUBLISH -->
+<!-- src="/home/georgios/code/thirdparty/MathJax/es5/tex-chtml.js"> -->
+</script>
+
+  
+  </div>
+
+</article>
+
+    </div>
+
+    <div class="wrapper-footer">
+      <div class="container">
+        <footer class="footer">
+          
+<a href="mailto:bendai@cuhk.edu.hk"><i class="svg-icon email"></i></a>
+
+
+<a href="https://github.com/statmlben"><i class="svg-icon github"></i></a>
+
+
+
+<!-- <a href="/blog/feed.xml"><i class="svg-icon rss"></i></a> -->
+
+
+
+
+        </footer>
+      </div>
+    </div>
+
+    
+<script type="text/javascript">
+  /**
+ * AnchorJS - v4.1.0 - 2017-09-20
+ * https://github.com/bryanbraun/anchorjs
+ * Copyright (c) 2017 Bryan Braun; Licensed MIT
+ */
+!function(A,e){"use strict";"function"==typeof define&&define.amd?define([],e):"object"==typeof module&&module.exports?module.exports=e():(A.AnchorJS=e(),A.anchors=new A.AnchorJS)}(this,function(){"use strict";return function(A){function e(A){A.icon=A.hasOwnProperty("icon")?A.icon:"",A.visible=A.hasOwnProperty("visible")?A.visible:"hover",A.placement=A.hasOwnProperty("placement")?A.placement:"right",A.ariaLabel=A.hasOwnProperty("ariaLabel")?A.ariaLabel:"Anchor",A.class=A.hasOwnProperty("class")?A.class:"",A.truncate=A.hasOwnProperty("truncate")?Math.floor(A.truncate):64}function t(A){var e;if("string"==typeof A||A instanceof String)e=[].slice.call(document.querySelectorAll(A));else{if(!(Array.isArray(A)||A instanceof NodeList))throw new Error("The selector provided to AnchorJS was invalid.");e=[].slice.call(A)}return e}function i(){if(null===document.head.querySelector("style.anchorjs")){var A,e=document.createElement("style");e.className="anchorjs",e.appendChild(document.createTextNode("")),void 0===(A=document.head.querySelector('[rel="stylesheet"], style'))?document.head.appendChild(e):document.head.insertBefore(e,A),e.sheet.insertRule(" .anchorjs-link {   opacity: 0;   text-decoration: none;   -webkit-font-smoothing: antialiased;   -moz-osx-font-smoothing: grayscale; }",e.sheet.cssRules.length),e.sheet.insertRule(" *:hover > .anchorjs-link, .anchorjs-link:focus  {   opacity: 1; }",e.sheet.cssRules.length),e.sheet.insertRule(" [data-anchorjs-icon]::after {   content: attr(data-anchorjs-icon); }",e.sheet.cssRules.length),e.sheet.insertRule(' @font-face {   font-family: "anchorjs-icons";   src: url(data:n/a;base64,AAEAAAALAIAAAwAwT1MvMg8yG2cAAAE4AAAAYGNtYXDp3gC3AAABpAAAAExnYXNwAAAAEAAAA9wAAAAIZ2x5ZlQCcfwAAAH4AAABCGhlYWQHFvHyAAAAvAAAADZoaGVhBnACFwAAAPQAAAAkaG10eASAADEAAAGYAAAADGxvY2EACACEAAAB8AAAAAhtYXhwAAYAVwAAARgAAAAgbmFtZQGOH9cAAAMAAAAAunBvc3QAAwAAAAADvAAAACAAAQAAAAEAAHzE2p9fDzz1AAkEAAAAAADRecUWAAAAANQA6R8AAAAAAoACwAAAAAgAAgAAAAAAAAABAAADwP/AAAACgAAA/9MCrQABAAAAAAAAAAAAAAAAAAAAAwABAAAAAwBVAAIAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAMCQAGQAAUAAAKZAswAAACPApkCzAAAAesAMwEJAAAAAAAAAAAAAAAAAAAAARAAAAAAAAAAAAAAAAAAAAAAQAAg//0DwP/AAEADwABAAAAAAQAAAAAAAAAAAAAAIAAAAAAAAAIAAAACgAAxAAAAAwAAAAMAAAAcAAEAAwAAABwAAwABAAAAHAAEADAAAAAIAAgAAgAAACDpy//9//8AAAAg6cv//f///+EWNwADAAEAAAAAAAAAAAAAAAAACACEAAEAAAAAAAAAAAAAAAAxAAACAAQARAKAAsAAKwBUAAABIiYnJjQ3NzY2MzIWFxYUBwcGIicmNDc3NjQnJiYjIgYHBwYUFxYUBwYGIwciJicmNDc3NjIXFhQHBwYUFxYWMzI2Nzc2NCcmNDc2MhcWFAcHBgYjARQGDAUtLXoWOR8fORYtLTgKGwoKCjgaGg0gEhIgDXoaGgkJBQwHdR85Fi0tOAobCgoKOBoaDSASEiANehoaCQkKGwotLXoWOR8BMwUFLYEuehYXFxYugC44CQkKGwo4GkoaDQ0NDXoaShoKGwoFBe8XFi6ALjgJCQobCjgaShoNDQ0NehpKGgobCgoKLYEuehYXAAAADACWAAEAAAAAAAEACAAAAAEAAAAAAAIAAwAIAAEAAAAAAAMACAAAAAEAAAAAAAQACAAAAAEAAAAAAAUAAQALAAEAAAAAAAYACAAAAAMAAQQJAAEAEAAMAAMAAQQJAAIABgAcAAMAAQQJAAMAEAAMAAMAAQQJAAQAEAAMAAMAAQQJAAUAAgAiAAMAAQQJAAYAEAAMYW5jaG9yanM0MDBAAGEAbgBjAGgAbwByAGoAcwA0ADAAMABAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAH//wAP) format("truetype"); }',e.sheet.cssRules.length)}}this.options=A||{},this.elements=[],e(this.options),this.isTouchDevice=function(){return!!("ontouchstart"in window||window.DocumentTouch&&document instanceof DocumentTouch)},this.add=function(A){var n,o,s,a,r,c,h,l,u,d,f,p=[];if(e(this.options),"touch"===(f=this.options.visible)&&(f=this.isTouchDevice()?"always":"hover"),A||(A="h2, h3, h4, h5, h6"),0===(n=t(A)).length)return this;for(i(),o=document.querySelectorAll("[id]"),s=[].map.call(o,function(A){return A.id}),r=0;r<n.length;r++)if(this.hasAnchorJSLink(n[r]))p.push(r);else{if(n[r].hasAttribute("id"))a=n[r].getAttribute("id");else if(n[r].hasAttribute("data-anchor-id"))a=n[r].getAttribute("data-anchor-id");else{u=l=this.urlify(n[r].textContent),h=0;do{void 0!==c&&(u=l+"-"+h),c=s.indexOf(u),h+=1}while(-1!==c);c=void 0,s.push(u),n[r].setAttribute("id",u),a=u}a.replace(/-/g," "),(d=document.createElement("a")).className="anchorjs-link "+this.options.class,d.href="#"+a,d.setAttribute("aria-label",this.options.ariaLabel),d.setAttribute("data-anchorjs-icon",this.options.icon),"always"===f&&(d.style.opacity="1"),""===this.options.icon&&(d.style.font="1em/1 anchorjs-icons","left"===this.options.placement&&(d.style.lineHeight="inherit")),"left"===this.options.placement?(d.style.position="absolute",d.style.marginLeft="-1em",d.style.paddingRight="0.5em",n[r].insertBefore(d,n[r].firstChild)):(d.style.paddingLeft="0.375em",n[r].appendChild(d))}for(r=0;r<p.length;r++)n.splice(p[r]-r,1);return this.elements=this.elements.concat(n),this},this.remove=function(A){for(var e,i,n=t(A),o=0;o<n.length;o++)(i=n[o].querySelector(".anchorjs-link"))&&(-1!==(e=this.elements.indexOf(n[o]))&&this.elements.splice(e,1),n[o].removeChild(i));return this},this.removeAll=function(){this.remove(this.elements)},this.urlify=function(A){var t=/[^A-Za-z0-9._-]/g;return this.options.truncate||e(this.options),A.trim().replace(/\'/gi,"").replace(t,"-").replace(/-{2,}/g,"-").substring(0,this.options.truncate).replace(/^-+|-+$/gm,"").toLowerCase()},this.hasAnchorJSLink=function(A){var e=A.firstChild&&(" "+A.firstChild.className+" ").indexOf(" anchorjs-link ")>-1,t=A.lastChild&&(" "+A.lastChild.className+" ").indexOf(" anchorjs-link ")>-1;return e||t||!1}}});
+
+  new AnchorJS({
+    placement: 'left',
+    truncate: 32,
+    visible: 'hover',
+  }).add('h2');
+
+  new AnchorJS({
+    icon: '¶',
+    placement: 'left',
+    truncate: 32,
+    visible: 'hover',
+  }).add('p');
+</script>
+
+
+  </body>
+</html>

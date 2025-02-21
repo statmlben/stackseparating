@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{% if page.title %}{{ page.title }} – {% endif %}{{ site.name }} – {{ site.description }}</title>
+
+    {% include meta.html %}
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/style.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
+    <link rel="alternate" type="application/rss+xml" title="{{ site.name }} - {{ site.description }}" href="{{ site.baseurl }}/feed.xml" />
+    <!--Google fonts: See this article for changing fonts: http://sebrink.de/Google-Webfonts-for-my-Jekyll/ -->
+    <!-- <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Code+Pro|Vollkorn+SC|Vollkorn:400,400i&display=swap" rel="stylesheet"> -->
+    <!--
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Lato:wght@700;900&family=Source+Code+Pro:wght@500&family=Dela+Gothic+One&family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">     
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono&family=Lato:wght@700&family=Marcellus&family=Vollkorn:ital@1&display=swap" rel="stylesheet">
+    <!-- Shortcut Icon / Favicon-->
+    <!-- <link rel="shortcut icon" type="image/png" href="/blog/images/favicon-196x196.png">
+    <link rel="shortcut icon" sizes="196x196" href="/blog/images/favicon-196x196.png"> -->
+
+
+    <!-- Created with Jekyll Now - http://github.com/barryclark/jekyll-now -->
+  </head>
+
+  <body>
+    <div class="wrapper-masthead">
+      <div class="container">
+        <header class="masthead clearfix">
+          <!-- <a href="{{ site.baseurl }}/" class="site-avatar"><img src="{{ site.avatar }}" /></a> -->
+
+          <div class="site-info">
+            <h1 class="site-name"><a href="{{ site.baseurl }}/">{{ site.name | markdownify }}</a></h1>
+            <p class="site-description">{{ site.description | markdownify }}</p>
+          </div>
+
+          <nav>
+            <!-- <a href="{{ site.baseurl }}/">Recent</a> -->
+            <!-- <a href="https://ko-fi.com/geoant">Buy &#x2615;</a> -->
+            <a href="{{ site.baseurl }}/archive">Date</a>
+            <a href="{{ site.baseurl }}/tags">Tag</a>
+            <a href="{{ site.baseurl }}/about">About</a>
+            <!-- <a href="{{ site.baseurl }}/feed.xml">Feed</a> -->
+          </nav>
+        </header>
+      </div>
+    </div>
+
+    <div id="main" role="main" class="container">
+      {{ content }}
+    </div>
+
+    <div class="wrapper-footer">
+      <div class="container">
+        <footer class="footer">
+          {% include svg-icons.html %}
+        </footer>
+      </div>
+    </div>
+
+    {% include anchorjs.html %}
+  </body>
+</html>

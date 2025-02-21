@@ -1,0 +1,396 @@
+---
+---
+
+//
+// IMPORTS
+//
+
+@import "reset";
+@import "fonts";
+@import "variables";
+// Syntax highlighting @import is at the bottom of this file
+
+/**************/
+/* BASE RULES */
+/**************/
+
+html {
+  font-size: 100%;
+}
+
+body {
+	background: $backgroundColor;
+  font-family:  $Body;
+  font-size: 18px;
+  line-height: 1.4;
+  color: $foregroundColor;
+  font-kerning: auto;
+
+  @include mobile {
+    background: $backgroundColor;
+    color: $foregroundColor;
+  }
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 740px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+code {
+  font-family: $Monospace;
+  font-size: 0.89em;
+}
+
+.highlight {
+  font-size: 0.95em; // this gets multiplied to the code font size in the code blocks, making it smaller there but not in body text
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $Headings;
+  color: $foregroundColor;
+  font-weight: normal;
+  font-kerning: auto;
+
+  line-height: 1.7;
+  margin: 1em 0 15px;
+  padding: 0;
+
+  @include mobile {
+    line-height: 1.4;
+  }
+}
+
+h1 {
+  font-size: 24px;//orig 30px
+  font-weight: 900;
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+// style for the site name
+h1.site-name {
+  font-family: $Gothic;
+  font-weight: normal;
+}
+// style for the blog post title
+h1.page-title {
+  font-family: $Gothic;
+  font-weight: normal;
+}
+
+h2 {
+  font-size: 20px;//orig 24px
+  text-decoration: none;
+}
+
+h3 {
+  font-size: 18px;//orig 20px
+  text-decoration: none;
+}
+
+h4 {
+  font-size: 18px;//orit 18px
+  color: $gray;
+  text-decoration: none;
+}
+
+p {
+  margin: 15px 0;
+}
+
+a {
+  color: $foregroundColor;
+  text-decoration: underline;
+	cursor: pointer;
+  &:hover, &:active {
+    color: $darkRed;
+    text-decoration: underline;
+  }
+}
+
+ul, ol {
+  margin: 15px 0;
+  padding-left: 30px;
+}
+
+ul {
+  list-style-type: disc;
+}
+
+ol {
+  list-style-type: decimal;
+}
+
+ol ul, ul ol, ul ul, ol ol {
+  margin: 0;
+}
+
+ul ul, ol ul {
+  list-style-type: circle;
+}
+
+em, i {
+  font-family: $Emphasis;
+  font-size: 1.1em;
+  font-weight: Thin;
+  font-style: italic;
+}
+
+strong, b {
+  font-weight: bold;
+}
+
+img {
+  max-width: 100%;
+}
+
+figure {
+  //border: 1px #cccccc solid;
+  padding: 4px;
+  //margin: auto;
+  max-width: 100%;
+  background-color: var(--dark-color); //images are designed for dark background
+  border-radius: 5px;
+}
+
+.github-comments {
+  font-size: 0.85em;
+}
+
+figcaption {
+  color: $gray;
+  //font-style: italic;
+  padding: 2px;
+  text-align: left;
+  font-size: 0.85em
+}
+
+// Fixes images in popup boxes from Google Translate
+.gmnoprint img {
+  max-width: none;
+}
+
+.date {
+  font-style: italic;
+  color: $gray;
+  font-size: 0.85em;
+  text-align: right;
+}
+
+// Specify the color of the selection
+::-moz-selection {
+  color: $black;
+  background: $lightGray;
+}
+::selection {
+  color: $black;
+  background: $lightGray;
+}
+
+// Nicolas Gallagher's micro clearfix hack
+// http://nicolasgallagher.com/micro-clearfix-hack/
+.clearfix:before,
+.clearfix:after {
+    content: " ";
+    display: table;
+}
+
+.clearfix:after {
+    clear: both;
+}
+
+/*********************/
+/* LAYOUT / SECTIONS */
+/*********************/
+
+//
+// .masthead
+//
+
+.wrapper-masthead {
+  margin-bottom: 50px;
+}
+
+.masthead {
+  padding: 20px 0;
+  border-bottom: 1px solid $separatorColor;
+
+  @include mobile {
+    text-align: center;
+  }
+}
+
+.site-avatar {
+  float: left;
+  width: 70px;
+  height: 70px;
+  margin-right: 15px;
+
+  @include mobile {
+    float: none;
+    display: block;
+    margin: 0 auto;
+  }
+
+  img {
+    border-radius: 5px;
+  }
+}
+
+.site-info {
+  float: left;
+
+  @include mobile {
+    float: none;
+    display: block;
+    margin: 0 auto;
+  }
+}
+
+.site-name {
+  margin: 0;
+  color: $foregroundColor;
+  cursor: pointer;
+  font-family: $Headings;
+  font-weight: 300;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+.site-description {
+  margin: -5px 0 0 0;
+  color: $foregroundColor;
+  font-size: 16px;
+
+  @include mobile {
+    margin: 3px 0;
+  }
+}
+
+nav {
+  float: right;
+  margin-top: 23px; // @TODO: Vertically middle align
+  font-family: $Headings;
+  font-size: 18px;
+
+  @include mobile {
+    float: none;
+    margin-top: 9px;
+    display: block;
+    font-size: 16px;
+  }
+
+  a {
+    margin-left: 20px;
+    color: $foregroundColor;
+    text-align: right;
+    font-weight: 300;
+    letter-spacing: 1px;
+
+    @include mobile {
+      margin: 0 10px;
+      color: $foregroundColor;
+    }
+  }
+}
+
+//
+// .main
+//
+
+.posts > .post {
+  padding-bottom: 2em;
+  // no line separator between posts on front page
+  //border-bottom: 1px solid $separatorColor;
+}
+
+.posts > .archive-link {
+  margin: 1em 0 15px;
+  padding-bottom: 1em;
+}
+
+.post {
+  blockquote {
+    margin: 1.8em .8em;
+    border-left: 2px solid $gray;
+    padding: 0.1em 1em;
+    color: $gray;
+    font-style: italic;
+  }
+
+  .comments {
+    margin-top: 10px;
+  }
+
+  .read-more {
+    text-transform: uppercase;
+    font-size: 15px;
+  }
+}
+
+.wrapper-footer {
+  margin-top: 50px;
+  border-top: 1px solid $separatorColor;
+  border-bottom: 1px solid $separatorColor;
+  background-color: $backgroundColor;
+}
+
+footer {
+  padding: 20px 0;
+  text-align: center;
+}
+
+.footnotes {
+  font-size: 0.8em;
+}
+
+.float-left {
+  display: block;
+  margin-top: 2em;
+  margin-bottom: 2em;
+  margin-left: -20%;
+  margin-right: 2em;
+  max-width: 300px;
+  float: left;
+}
+
+.float-right {
+  display: block;
+  margin-top: 2em;
+  margin-bottom: 2em;
+  margin-left: 2em;
+  margin-right: -20%;
+  max-width: 300px;
+  float: right;
+}
+
+.google-maps {
+  position: relative;
+  padding-bottom: 75%; // This is the aspect ratio
+  height: 0;
+  overflow: hidden;
+  @include mobile {
+    padding-bottom: 150%;  // aspect ratio
+  }
+}
+.google-maps iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 640px;
+  height: 480px;
+  @include mobile {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+// Settled on moving the import of syntax highlighting to the bottom of the CSS
+// ... Otherwise it really bloats up the top of the CSS file and makes it difficult to find the start
+@import "highlights";
+@import "svg-icons";
+@import "tags";

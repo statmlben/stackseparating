@@ -1,0 +1,56 @@
+
+//
+// VARIABLES
+//
+
+// Colors
+$blue: #4183C4;
+$darkRed: #A70000;
+
+// light and dark mode according to browser settings
+// see here: https://derekkedziora.com/blog/dark-mode-revisited
+// these are the colors for LIGHT MODE
+html { 
+  --dark-color: rgb(42,42,42);
+  --bright-color: #fafafa;
+  --background-color : var(--bright-color);
+  --foreground-color : var(--dark-color);
+  --code-background : #d6d6d6;
+}
+
+// these are the colors for DARK MODE
+@media (prefers-color-scheme: dark) {
+	html {
+  --dark-color: rgb(42,42,42);
+  --bright-color: #fafafa;
+  --background-color : var(--dark-color);
+  --foreground-color : var(--bright-color);
+  --code-background : rgb(32,32,32);
+  }
+}
+
+// Grays
+$black: #000;
+$gray: rgb(178, 178, 178);
+$lightGray: rgb(204, 204, 204);
+
+$darkColor: var(--dark-color);
+$backgroundColor: var(--background-color);//#171717;
+$foregroundColor:var(--foreground-color);// #efe9ef; 
+$separatorColor: $foregroundColor;
+
+//Font stacks new
+//see:http://sebrink.de/Google-Webfonts-for-my-Jekyll/
+//$SansSerif: 'Open Sans', sans-serif;
+$Headings: 'Lato', sans-serif;
+$Body: 'Marcellus', sans-serif;
+$Emphasis: 'Vollkorn', serif;
+$Monospace: 'JetBrains Mono', monospace;
+$Gothic: 'Dela Gothic One', serif;
+
+// Mobile breakpoints
+@mixin mobile {
+  @media screen and (max-width: 640px) {
+    @content;
+  }
+}

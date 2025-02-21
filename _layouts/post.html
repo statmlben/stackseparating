@@ -1,0 +1,56 @@
+---
+layout: default
+---
+
+<article class="post">
+  <h1 class="page-title">{{ page.title | markdownify }}</h1>
+  
+
+  <!-- the support banner-->
+  <div class="date" style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <!-- Left: Banner Image -->
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+      
+      <div style="text-align: right;">
+          Posted {{ page.date | date: "%Y-%m-%d" }} 
+      </div>
+  </div>
+
+  {% if page.last_updated %}
+      <div class="date" style="text-align: right;">
+          Last Updated {{ page.last_updated | date: "%Y-%m-%d" }}
+      </div>
+  {% endif %}
+
+  <div class="entry">
+    {{ content }}
+
+    <div>
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+    <div>
+  </div>
+    
+  <div>
+    {% assign page_tags = page.tags | sort %}
+    {% for tag in page_tags%}
+      <a href="{{ site.baseurl }}{{ site.tag_page }}#{{ tag | slugify: 'pretty' | url_encode }}" class="post-tag">{{ tag | slugify: 'pretty' | escape }}</a>
+    {% endfor %}
+  </div>
+
+  <div>
+  {% if page.comments_id %}
+    {% include comments.html %}
+  {% endif %}
+
+  {%if page.math == true %}
+    {% include mathjax.html %}
+  {% endif %}
+  </div>
+
+</article>

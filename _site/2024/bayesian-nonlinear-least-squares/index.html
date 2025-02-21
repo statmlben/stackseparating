@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Nonlinear Least Squares Fitting - A Bayesian Tutorial – Stack Separating – There is nothing more practical than a good theory</title>
+
+        <meta charset="utf-8" />
+    <meta content='text/html; charset=utf-8' http-equiv='Content-Type'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>
+
+    
+    <meta name="description" content="In this article, we’ll derive from scratch the well known formulas –and some not so well known
+ones– for nonlinear least squares fitting from a Bayesian perspective.
+We’ll be using only elementary linear algebra and elementary calculus. It turns
+out, that this is a valuable exercise, because it allows us to clearly state our
+assumptions about the problem and assign unambigous meaning to all components of
+the least squares fitting process.
+" />
+    <meta property="og:description" content="In this article, we’ll derive from scratch the well known formulas –and some not so well known
+ones– for nonlinear least squares fitting from a Bayesian perspective.
+We’ll be using only elementary linear algebra and elementary calculus. It turns
+out, that this is a valuable exercise, because it allows us to clearly state our
+assumptions about the problem and assign unambigous meaning to all components of
+the least squares fitting process.
+" />
+    
+    <meta name="author" content="Stack Separating
+" />
+
+    
+    <meta property="og:title" content="Nonlinear Least Squares Fitting - A Bayesian Tutorial
+" />
+    <meta property="twitter:title" content="Nonlinear Least Squares Fitting - A Bayesian Tutorial
+" />
+    
+
+    
+    <meta property="og:image" content="https://raw.githubusercontent.com/geo-ant/blog/master/images/og/least-squares-bayesian.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link rel="stylesheet" type="text/css" href="/blog/style.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
+    <link rel="alternate" type="application/rss+xml" title="Stack Separating - There is nothing more practical than a good theory" href="/blog/feed.xml" />
+    <!--Google fonts: See this article for changing fonts: http://sebrink.de/Google-Webfonts-for-my-Jekyll/ -->
+    <!-- <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Code+Pro|Vollkorn+SC|Vollkorn:400,400i&display=swap" rel="stylesheet"> -->
+    <!--
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Lato:wght@700;900&family=Source+Code+Pro:wght@500&family=Dela+Gothic+One&family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">     
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono&family=Lato:wght@700&family=Marcellus&family=Vollkorn:ital@1&display=swap" rel="stylesheet">
+    <!-- Shortcut Icon / Favicon-->
+    <!-- <link rel="shortcut icon" type="image/png" href="/blog/images/favicon-196x196.png">
+    <link rel="shortcut icon" sizes="196x196" href="/blog/images/favicon-196x196.png"> -->
+
+
+    <!-- Created with Jekyll Now - http://github.com/barryclark/jekyll-now -->
+  </head>
+
+  <body>
+    <div class="wrapper-masthead">
+      <div class="container">
+        <header class="masthead clearfix">
+          <!-- <a href="/blog/" class="site-avatar"><img src="" /></a> -->
+
+          <div class="site-info">
+            <h1 class="site-name"><a href="/blog/"><p>Stack Separating</p>
+</a></h1>
+            <p class="site-description"><p>There is nothing more practical than a good theory</p>
+</p>
+          </div>
+
+          <nav>
+            <!-- <a href="/blog/">Recent</a> -->
+            <!-- <a href="https://ko-fi.com/geoant">Buy &#x2615;</a> -->
+            <a href="/blog/archive">Date</a>
+            <a href="/blog/tags">Tag</a>
+            <a href="/blog/about">About</a>
+            <!-- <a href="/blog/feed.xml">Feed</a> -->
+          </nav>
+        </header>
+      </div>
+    </div>
+
+    <div id="main" role="main" class="container">
+      <article class="post">
+  <h1 class="page-title"><p>Nonlinear Least Squares Fitting - A Bayesian Tutorial</p>
+</h1>
+  
+
+  <!-- the support banner-->
+  <div class="date" style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <!-- Left: Banner Image -->
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+      
+      <div style="text-align: right;">
+          Posted 2024-07-18 
+      </div>
+  </div>
+
+  
+      <div class="date" style="text-align: right;">
+          Last Updated 2024-08-21
+      </div>
+  
+
+  <div class="entry">
+    <p>In this article, we’ll derive from scratch the well known formulas –and some not so well known
+ones– for nonlinear least squares fitting from a Bayesian perspective.
+We’ll be using only elementary linear algebra and elementary calculus. It turns
+out, that this is a valuable exercise, because it allows us to clearly state our
+assumptions about the problem and assign unambigous meaning to all components of
+the least squares fitting process.</p>
+
+<p>I went into this rabbit hole when trying to understand why two well-respected
+optimization libraries, namely <a href="https://www.gnu.org/software/gsl/doc/html/nls.html#covariance-matrix-of-best-fit-parameters">the GSL</a>
+and Google’s <a href="http://ceres-solver.org/nnls_covariance.html">Ceres Solver</a>
+give two slightly different results for the covariance matrices of the best
+fit parameters. As it turns out, both are correct, but they imply slightly 
+different states of prior knowledge about the problem.</p>
+
+<h1 id="1-nonlinear-least-squares-fitting">1. Nonlinear Least Squares Fitting</h1>
+
+<p>Assume we have a vector of \(N_y\) observations \(\boldsymbol{y} \in \mathbb{R}^{N_y}\)
+that we want to “fit” with a <em>model function</em>
+\(\boldsymbol{f}(\boldsymbol{p}) \in \mathbb{R}^{N_y}\) that depends on \(N_p\)
+parameters \(\boldsymbol{p} \in \mathbb{R}^{N_p}\). Then, the process of least
+squares <em>fitting</em> a function is to find the parameters that minimize the weighted
+squared difference of the function and the observations. We call those parameters
+\(\boldsymbol{p}^\dagger\), formally:</p>
+
+\[\boldsymbol{p}^\dagger = \arg\min_{\boldsymbol{p}} \frac{1}{2} \lVert W \left(\boldsymbol{y} - \boldsymbol{f}(\boldsymbol{p})\right) \rVert^2 \label{lsqr-fitting}\tag{1.1},\]
+
+<p>where \(\lVert\cdot\rVert\) is the \(\ell_2\) norm of a vector and \(\boldsymbol{W} \in \mathbb{R}^{N_y \times N_y}\) is a matrix
+of weights. We’ll spend much more time on what those weights mean in
+the following sections. For now, let’s introduce some helpful abbreviations
+and rewrite the equation above:</p>
+
+\[\boldsymbol{p}^\dagger = \arg\min_{\boldsymbol{p}} g(\boldsymbol{p}) \label{lsqr-fitting-g}\tag{1.2},\]
+
+<p>where \(g\) is called the <em>objective function</em> of the minimization, which
+we can write in terms of the (weighted) residuals:</p>
+
+\[\begin{eqnarray} 
+g(\boldsymbol{p}) &amp;:=&amp; \frac{1}{2} \boldsymbol{r}_w^T(\boldsymbol{p}) \boldsymbol{r_w}(\boldsymbol{p}), \label{objective-function} \tag{1.3}\\
+  &amp;=&amp; \frac{1}{2} \boldsymbol{r}^T(\boldsymbol{p}) (\boldsymbol{W}^T \boldsymbol{W}) \boldsymbol{r}(\boldsymbol{p}) \\
+\boldsymbol{r}(\boldsymbol{p}) &amp;:=&amp; \boldsymbol{y}-\boldsymbol{f}(\boldsymbol{p}) \label{residuals}\tag{1.4} \\
+\boldsymbol{r}_w(\boldsymbol{p}) &amp;:=&amp; \boldsymbol{W} \boldsymbol{r}(\boldsymbol{p}) \label{weighted-residuals}\tag{1.5}
+\end{eqnarray}\]
+
+<p>Note, that the objective function is a quadratic form with the matrix
+\(\boldsymbol{W}^T\boldsymbol{W}\). Sometimes, the objective function
+is written as \(\boldsymbol{r}^T \boldsymbol{W'} \boldsymbol{r}\) or
+\(\boldsymbol{r}^T \boldsymbol{S^{-1}} \boldsymbol{r}\). All forms are equivalent,
+but it does influence how exactly the elements of the weighting matrix appear
+in the later equations. This determines their precise meaning. One can always transform
+one representation into another, but the important thing is to pick one and 
+apply it consistently. For the purposes of this article, let’s stick with the
+objective function as stated above.</p>
+
+<p>Our ultimate goal here is to answer the following questions: why do we minimize
+the sum of squares, as opposed to e.g. the sum of absolutes or 4th powers?
+What exactly do the weights represent? What are the statistical
+properties of the best fit parameters? What is the
+confidence band (or <em>credible interval</em> to be more precise) around the best model
+after the fit? We’ll try and answer this by building nonlinear least squares from the ground up.</p>
+
+<h2 id="11-helpful-identities">1.1 Helpful Identities</h2>
+
+<p>Before we dive in to the Bayesian perspective, let’s state some helpful equations
+that will come in handy later. These formulas are found e.g. in the classic (Noc06)
+or the very nice thesis (Kal22). The gradient of the objective function is</p>
+
+\[\nabla g(\boldsymbol{p}) = \boldsymbol{J}^T_{r_w}(\boldsymbol{p})\; \boldsymbol{r}_w(\boldsymbol{p}), \label{gradient-objective}\tag{1.6}\]
+
+<p>where \(\boldsymbol{J}_{r_w}(\boldsymbol{p})\) is the Jacobian Matrix of 
+the weighted residuals \(\boldsymbol{r}_w(\boldsymbol{p})\).
+Often, the Jacobian is only denoted by a simple \(\boldsymbol{J}\), but for this post
+it pays to be precise, because there is also the Jacobian \(\boldsymbol{J}_f\) of 
+the model function \(\boldsymbol{f}(\boldsymbol{p})\), which is related to \(\boldsymbol{J}_{r_w}\)
+by</p>
+
+\[\boldsymbol{J}_{r_w}(\boldsymbol{p}) = -\boldsymbol{W} \boldsymbol{J}_f(\boldsymbol{p}).\label{jac-rw-f}\tag{1.7}\]
+
+<p>The Hessian matrix of \(g(\boldsymbol{p})\) is calculated as follows, using
+the notation \(r_{w,j}\) for the element at index \(j\) of \(\boldsymbol{r}_w\):</p>
+
+\[\begin{eqnarray}
+\boldsymbol{H}_{g}(\boldsymbol{p}) = \nabla^2 g(\boldsymbol{p}) &amp;=&amp; \boldsymbol{J}_{r_w}^T(\boldsymbol{p}) \boldsymbol{J}_{r_w}(\boldsymbol{p})+\sum_{j} r_{w,j}(\boldsymbol{p}) \nabla^2 r_{w,j}(\boldsymbol{p}) \label{hessian-g-exact} \tag{1.8} \\
+ &amp;\approx&amp; \boldsymbol{J}_{r_w}^T(\boldsymbol{p}) \boldsymbol{J}_{r_w}(\boldsymbol{p}) \label{hessian-g-approx} \tag{1.9},
+\end{eqnarray}\]
+
+<p>The approximation is very commonly used in least squares fitting and we will
+also employ it in this article. With those bits of housekeeping out of the way,
+let’s now dive into the Bayesian perspective.</p>
+
+<h1 id="2-bayesian-perspective-on-least-squares">2. Bayesian Perspective on Least Squares</h1>
+
+<p>The fundamental assumption that will bring us to nonlinear least squares is
+that the data can be modeled by a normal distribution. Why is that? One way
+to think of it, is that each observation is the sum of a <em>true</em> underlying value
+with additive zero mean Gaussian noise.</p>
+
+\[Y_j = Y_{j,\text{true}} + N_j,\]
+
+<p>where the noise \(N \sim \mathcal{N}(0,\sigma_j)\) is normally distributed with
+zero mean. If we assume the true value is one exact value, we can model its distribution as a delta
+peak. Thus, the sum of the true value and the noise will follow a normal
+distribution centered around the true value. In our case, we don’t know the
+true value, but we assume it can be modeled by \(\boldsymbol{f}(\boldsymbol{p})\),
+for an unknown set of parameters \(\boldsymbol{p}\). 
+Let me reiterate what that means: we assume that there is a value of \(\boldsymbol{p}\) such that for this value,
+the model \(\boldsymbol{f}(\boldsymbol{p})\) actually produces the true underlying values.</p>
+
+<p>Under these assumptions, if the parameters \(\boldsymbol{p}\) are given, the likelihood of observing data \(\boldsymbol{y}\) is
+given as a <a href="https://en.wikipedia.org/wiki/Multivariate_normal_distribution">multivariate normal distribution</a>
+with mean \(\boldsymbol{f}(\boldsymbol{p})\) and covariance matrix \(\Sigma \in \mathbb{R}^{N_y\times N_y}\). 
+The covariance matrix informs us about the observed variance (and covariance) <em>in the observed data</em>. For
+example, on the \(j\)-th position on the diagonal it has the <em>variance</em> \(\sigma_j^2\)
+of the data element at \(j\).</p>
+
+<p>For this article, let’s make the assumption that the elements
+\(y_j\) are <a href="https://en.wikipedia.org/wiki/Independence_(probability_theory)">statistically independent</a>
+of each other. Some of the calculations in this article will be true even if they
+aren’t, but finding  out which ones is left as an <em>exercise to the reader</em><sup id="fnref:exercise-reader" role="doc-noteref"><a href="#fn:exercise-reader" class="footnote" rel="footnote">1</a></sup>.
+The statistical independence implies that the covariance matrix is nonzero
+only on the diagonal:</p>
+
+\[\Sigma = \text{diag}(\sigma^2_1,\dots,\sigma^2_{N_y}) \label{covariance-diag}\tag{2.1}\]
+
+<p>We can now write the likelihood of observing data \(y_j\) at index \(j\), given
+the parameters \(\boldsymbol{p}\) and the standard deviation \(\sigma_j\) at \(j\) as:</p>
+
+\[P(y_j | \boldsymbol{p}, \sigma_j) = \frac{1}{\sqrt{2\pi}\sigma_j}\exp\left( -\frac{1}{2}\frac{(y_j-f_j(\boldsymbol{p}))^2}{\sigma_j^2} \right).\label{likelihood-yi}\tag{2.2}\]
+
+<p>This allows us to write the likelihood of observing the data vector \(\boldsymbol{y}\)
+given the parameters \(\boldsymbol{p}\) and the set of standard deviations \(\{\sigma_j\}\) 
+as the product:</p>
+
+\[P(\boldsymbol{y}|\boldsymbol{p},\{\sigma_j\}) = \prod_j P(y_j|\boldsymbol{p},\{\sigma_j\}) \label{likelihood} \tag{2.3}\]
+
+<p>From a Bayesian point of view, we are interested
+in the posterior distribution that describes the probability density of \(\boldsymbol{p}\)
+given our observations \(\boldsymbol{y}\). Bayes Theorem brings us a step closer towards
+this:</p>
+
+\[P(\boldsymbol{p},\{\sigma_j\}|\boldsymbol{y}) = \frac{P(\boldsymbol{y}|\boldsymbol{p},\{\sigma_j\})\cdot P(\boldsymbol{p},\{\sigma_j\})}{P(\boldsymbol{y})}.\label{joint-posterior}\tag{2.4}\]
+
+<p>This is actually the joint posterior probability for the parameters \(\boldsymbol{p}\) <em>and</em>
+the standard deviations \(\{\sigma_j\}\). 
+Annoyingly, this posterior still contains the standard deviations. What’s nice is, that
+we can <a href="https://en.wikipedia.org/wiki/Marginal_distribution">marginalize out</a>
+the dependency on the standard deviations in the posterior by integration:</p>
+
+\[P(\boldsymbol{p}|\boldsymbol{y}) \propto \int  \left(\prod_j P(y_j|\boldsymbol{p},\{\sigma_j\})\right)\cdot P(\boldsymbol{p},\{\sigma_j\}) \;\text{d}\{\sigma_j\}\label{posterior}\tag{2.5}, \\\]
+
+<p>where the integral is multidimensinal over all \(\sigma_j\). This is finally 
+the posterior distribution for the parameters that we are looking for.
+It allows us, for example, to find the maximum <em>a posteriori</em> estimate for the parameters.
+There is just one problem: to actually find an expression for that, we need to
+solve the integral. And to do that we have to make some assumptions about
+the <em>prior</em> probability distribution \(P(\boldsymbol{p},\{\sigma_j\})\).</p>
+
+<p>In the next sections,
+we’ll work through the implications of different priors
+and we’ll relate them to the least squares problem eq. \(\eqref{lsqr-fitting}\).
+We’ll see, how different assumptions end up giving us the same estimate for the best
+(i.e. the most probable) parameters, but that there are differences in the associated uncertainties.
+Let’s start with the simplest case first.</p>
+
+<h1 id="3-nonlinear-least-squares-with-known-standard-deviations">3. Nonlinear Least Squares with Known Standard Deviations</h1>
+
+<p>If, for some reason, we <em>know</em> the standard deviations \(\{\sigma_j\}\), then
+things become decently simple. First, let’s rewrite the joint prior distribution 
+as</p>
+
+\[P(\boldsymbol{p},\{\sigma_j\}) = P(\boldsymbol{p}|\sigma_j)\,P(\{\sigma_j\}) = P(\boldsymbol{p})\,\prod_j P(\sigma_j).\]
+
+<p>Here, we have used that \(\boldsymbol{p}\) and \(\sigma_j\) are statistically
+independent in our case. Since we know all the standard deviations, the
+probability densities \(P(\sigma_j)\) are delta-functions centered around
+the known values, such that the posterior eq. \(\eqref{posterior}\) becomes:</p>
+
+\[P(\boldsymbol{p}|\boldsymbol{y}) \propto \prod_j P(y_j|\boldsymbol{p},\sigma_j)\cdot P(\boldsymbol{p}), \tag{3.1}\]
+
+<p>where all the \(\sigma_j\) are known constants. Now, we further assume 
+a uniform (or <em>flat</em>) prior for the parameters:</p>
+
+\[P(\boldsymbol{p}) = \text{const.} \tag{3.2}\]
+
+<p>From a Bayesian perspective, this is a naive way of conveying ignorance about
+the values of the parameters <sup id="fnref:uniform-prior" role="doc-noteref"><a href="#fn:uniform-prior" class="footnote" rel="footnote">2</a></sup><sup>,</sup><sup id="fnref:ignorance" role="doc-noteref"><a href="#fn:ignorance" class="footnote" rel="footnote">3</a></sup>.
+This lets us write the joint posterior probability eq. \(\eqref{joint-posterior}\)
+as:</p>
+
+\[\begin{eqnarray}
+P(\boldsymbol{p}&amp;|&amp;\boldsymbol{y}) \propto \exp\left(- g(\boldsymbol{p})\right) \label{posterior-known-sigma}\tag{3.4} \\
+\text{with } &amp;\boldsymbol{W}&amp; = \text{diag}(1/\sigma_1,\dots,1/\sigma_{N_y}) \label{weights-known-sigma}\tag{3.5}
+\end{eqnarray}\]
+
+<p>and with \(g(\boldsymbol{p})\) as in eq. \(\eqref{objective-function}\).
+It is now trivial to show, that maximizing the posterior distribution is equivalent
+to the least squares problem \(\eqref{lsqr-fitting}\). It’s important to note that
+the weights must be a diagonal matrix as in eq. \(\eqref{weights-known-sigma}\).</p>
+
+<h2 id="31-the-covariance-matrix-for-the-best-fit-parameters">3.1 The Covariance Matrix for the Best Fit Parameters</h2>
+
+<p>We will now derive an approximation for the covariance matrix \(\boldsymbol{C}_{p^\dagger}\)
+of the best fit parameters. This matrix is of interest e.g. because on the diagonal 
+it contains the variances of the elements of the parameter vector. If we know
+those, we can give estimates of credible intervals for the parameters. We can
+also use the covariance matrix to calculate <a href="https://en.wikipedia.org/wiki/Correlation#Correlation_matrices">correlations</a>
+between the parameters. Let’s start by examining the posterior probability
+for the parameters.</p>
+
+<p>In general, we won’t be able to say much about the functional form of the
+posterior probability \(\eqref{posterior-known-sigma}\),
+because it depends on \(\boldsymbol{f}(\boldsymbol{p})\). However, in the vicinity
+of the best fit parameters \(\boldsymbol{p}^\dagger\), we can make some 
+useful approximations.</p>
+
+<p>Using a Taylor expansion we can write \(g\) around the best fit parameter \(\boldsymbol{p}^\dagger\)
+as</p>
+
+\[g(\boldsymbol{p}) = g(\boldsymbol{p}^\dagger) + \nabla g(\boldsymbol{p}^\dagger) \cdot (\boldsymbol{p}-\boldsymbol{p}^\dagger) + \frac{1}{2} (\boldsymbol{p}-\boldsymbol{p}^\dagger)^T\, \boldsymbol{H}_g(\boldsymbol{p}^\dagger) (\boldsymbol{p}-\boldsymbol{p}^\dagger) + \mathcal{O}(\lVert \boldsymbol{p}-\boldsymbol{p}^\dagger\rVert^3)\]
+
+<p>where \(\nabla g(\boldsymbol{p}^\dagger)\) is the gradient of \(g\) and \(\boldsymbol{H}_g(\boldsymbol{p}^\dagger)\)
+is the Hessian of \(g\), both evaluated at \(\boldsymbol{p}^\dagger\). Since
+\(\boldsymbol{p}^\dagger\) minimizes \(g\), we know that the gradient must vanish, 
+such that we can approximate \(g\) up to second order as</p>
+
+\[g(\boldsymbol{p}) \approx g(\boldsymbol{p}^\dagger) + \frac{1}{2} (\boldsymbol{p}-\boldsymbol{p}^\dagger)^T\, \boldsymbol{H}_g(\boldsymbol{p}^\dagger) (\boldsymbol{p}-\boldsymbol{p}^\dagger). \label{taylor-approx-g}\tag{3.6}\]
+
+<p>We can use these results to approximate the posterior probability distribution
+around the best fit parameters:</p>
+
+\[P(\boldsymbol{p}|\boldsymbol{y}) \approx K \cdot \exp\left(-\frac{1}{2} (\boldsymbol{p}-\boldsymbol{p}^\dagger)^T\, \boldsymbol{H}_g(\boldsymbol{p}^\dagger) (\boldsymbol{p}-\boldsymbol{p}^\dagger)\right), \label{posterior-p-approximation}\tag{3.7}\]
+
+<p>where \(K\in\mathbb{R}\) is a constant of integration that also absorbs the constant
+first term in \(\eqref{taylor-approx-g}\). This turns out to be the a 
+<a href="https://en.wikipedia.org/wiki/Multivariate_normal_distribution">multivariate Gaussian distribution</a>
+with expected value \(\boldsymbol{p}^\dagger\) and covariance matrix 
+\(\boldsymbol{C}_{p^\dagger}=\boldsymbol{H}_g^{-1}(\boldsymbol{p}^\dagger)\).</p>
+
+\[\boldsymbol{C}_{p^\dagger} = \boldsymbol{H}_g^{-1}(\boldsymbol{p}^\dagger) \approx \left( \boldsymbol{J}_{r_w}^T (\boldsymbol{p}^\dagger) \boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger)\right)^{-1} = (\boldsymbol{J}_f^T(\boldsymbol{p}^\dagger) \; \boldsymbol{W}^T\boldsymbol{W} \;\boldsymbol{J}_f(\boldsymbol{p}^\dagger))^{-1}, \label{covariance-matrix-known-weights} \tag{3.9}\]
+
+<p>where \(\boldsymbol{J}_f\) is the Jacobian of \(\boldsymbol{f}(\boldsymbol{p})\)
+and thus \(\boldsymbol{J}_{r_w} = -\boldsymbol{W}\boldsymbol{J}_f\). We
+have used the common approximation for the Hessian of \(g\) as given in eq. \(\eqref{hessian-g-approx}\).
+Note, that eq. \(\eqref{covariance-matrix-known-weights}\) is the covariance for <em>known standard deviations</em>, where the weights
+must be chosen as specified in \(\eqref{weights-known-sigma}\).
+This concludes our analysis for the case of known standard deviations for now. Let’s 
+turn to cases where we don’t know the standard deviations.</p>
+
+<h1 id="4-nonlinear-least-squares-with-unknown-standard-deviations-with-a-known-relative-scaling">4. Nonlinear Least Squares with Unknown Standard Deviations with a Known Relative Scaling</h1>
+
+<p>Okay, the section heading is a mouthful, but it’s important to be precise. We’ll examine
+a special case of unknown standard deviations, which is as follows: Assume that
+the exact standard deviations are unknown, but that we (again, <em>for some reason</em>) 
+know a scaling between them, formally:</p>
+
+\[\sigma_j = w_j \, \sigma, \label{relative-scaling} \tag{4.1}\]
+
+<p>where \(\sigma\in\mathbb{R}\) is unknown, but the relative scaling \(w_j\) <em>is</em> known. We’ll
+see, that the naming of \(w_j\) is not an accident, because if we set</p>
+
+\[\boldsymbol{W} = \text{diag}(1/w_1,\dots,1/w_{N_y}) \label{relative-weights-matrix}\tag{4.2},\]
+
+<p>then we can rewrite the posterior as:</p>
+
+\[\begin{eqnarray}
+P(\boldsymbol{p} | \boldsymbol{y}) &amp;\propto&amp; \int_0^\infty \frac{1}{\sigma^{N_y}}\exp\left(-\frac{1}{2\sigma^2} \sum_{j=1}^{N_y} \frac{(y_j - f_j(\boldsymbol{p}))^2}{w_j^2} \right) P(\boldsymbol{p},\sigma)\; \text{d}\sigma\label{posterior-rel-sigma}\tag{4.3} \\
+ &amp;=&amp; \int_0^\infty \frac{1}{\sigma^{N_y}}\exp\left(-\frac{1}{2\sigma^2} \lVert \boldsymbol{r}_w(\boldsymbol{p})\rVert^2\right) P(\boldsymbol{p},\sigma)\; \text{d}\sigma, \label{posterior-rel-sigma-r2} \tag{4.4}
+\end{eqnarray}\]
+
+<p>where \(\boldsymbol{W}\) must be defined as in eq. \(\eqref{relative-weights-matrix}\) and
+\(\boldsymbol{r}_w\) is defined as in eq. \(\eqref{weighted-residuals}\). This is
+already a much simpler expression than the more general posterior in eq. \(\eqref{posterior}\),
+since the integral now is only along the one scalar \(\sigma\). However, we still need
+a joint prior distribution for \(P(\boldsymbol{p},\sigma)\).</p>
+
+<h2 id="41-uniform-prior">4.1 Uniform Prior</h2>
+
+<p>Since the uniform prior for \(P(\boldsymbol{p})\) did pretty well for us in the
+case of known standard deviations, let’s see what we can achieve when we assume
+a uniform prior for the joint distribution like so:</p>
+
+\[P(\boldsymbol{p},\sigma) = \text{const.}\]
+
+<p>This leads us (using a <a href="https://www.wolframalpha.com/input?i=int%281%2Fsigma%5EN*exp%28-1%2F%282*sigma%5E2%29*+r%5E2%29%29">little help from Wolfram Alpha</a>)
+to the following expression for the posterior distribution, where we have omitted all constants:</p>
+
+\[P(\boldsymbol{p}| \boldsymbol{y}) \propto (\lVert \boldsymbol{r}_w(\boldsymbol{p})\rVert^2)^{-\frac{N_y-1}{2}}. \label{posterior-uniform-prior}\tag{4.5}\]
+
+<p>Glossing over the fact that this is possibly an <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/sjos.12550">improper posterior</a>,
+we can already see that the posterior probability is maximal exactly at the least squares
+estimate \(\boldsymbol{p}^\dagger\) as given in the introduction in eq. \(\eqref{lsqr-fitting}\).</p>
+
+<h3 id="412-laplaces-approximation">4.1.2 Laplace’s Approximation</h3>
+
+<p>Now, we’ll employ a common step in Bayesian analysis to make the posterior
+probability more tractable: we’ll approximate it as a Gaussian. This approximation can,
+in principle, be applied to all posterior probabilities with varying degrees of
+accuracy. It’s called <a href="https://en.wikipedia.org/wiki/Laplace%27s_approximation">Laplace’s Approximation</a>
+and we will quickly go through it step by step, independent of our specific
+posterior. We’ll get back to eq. \(\eqref{posterior-uniform-prior}\) later.
+To start, we define the negative log-posterior as</p>
+
+\[L(\boldsymbol{p}) = -\log P(\boldsymbol{p}|\boldsymbol{y}). \label{log-posterior}\tag{4.6}\]
+
+<p>Maximizing the posterior probability with respect to the parameters is obviously
+the same as minimizing the negative log-posterior. Let’s denote the parameter that
+minimizes \(L\) with \(\boldsymbol{p}^\star\). Note that in our particular case 
+\(\boldsymbol{p}^\star=\boldsymbol{p}^\dagger\) is just the least squares estimate
+as defined in eq. \(\eqref{lsqr-fitting}\), but in general</p>
+
+\[\boldsymbol{p}^\star = \arg \min_{\boldsymbol{p}} L(\boldsymbol{p}).\]
+
+<p>Now, just like we did <a href="/blog/2024/bayesian-nonlinear-least-squares/#31-the-covariance-matrix-for-the-best-fit-parameters">in this section</a>,
+we can approximate \(L(\boldsymbol{p})\) by a second order Taylor expansion around
+it’s minimum</p>
+
+\[L(\boldsymbol{p}) \approx L(\boldsymbol{p}^\star) + \frac{1}{2} (\boldsymbol{p}-\boldsymbol{p}^\star)^T\, \boldsymbol{H}_L(\boldsymbol{p}^\star) (\boldsymbol{p}-\boldsymbol{p}^\star), \label{taylor-approx-L}\tag{4.7}\]
+
+<p>where \(\boldsymbol{H}_L(\boldsymbol{p}^\star)\) is the Hessian of \(L\) evaluated
+at the minimum \(\boldsymbol{p}^\star\). By inverting eq. \(\eqref{log-posterior}\)
+we can approximate the posterior as</p>
+
+\[P(\boldsymbol{p}|\boldsymbol{y}) \approx K^\star \cdot \exp\left(-\frac{1}{2} (\boldsymbol{p}-\boldsymbol{p}^\star)^T\, \boldsymbol{H}_L(\boldsymbol{p}^\star) (\boldsymbol{p}-\boldsymbol{p}^\star) \right),\label{posterior-p-approximation-L}\tag{4.8}\]
+
+<p>which is a multivariate normal distribution with covariance matrix</p>
+
+\[\boldsymbol{C}_{p^\star} = \boldsymbol{H}_L^{-1}(\boldsymbol{p}^\star). \label{covariance-HL}\tag{4.9}\]
+
+<p>That means we can estimate the covariance of the best fit parameters under this
+approximation as the inverse of the Hessian of \(L\) at the best fit parameters.</p>
+
+<h3 id="413-covariance-of-the-best-fit-parameters-for-a-uniform-prior">4.1.3 Covariance of the Best Fit Parameters for a Uniform Prior</h3>
+
+<p>To find the covariance matrix for the best fit parameters given our prior, we
+have to calculate \(L(\boldsymbol{p})\) and its Hessian at the best fit parameters.</p>
+
+\[L(\boldsymbol{p}) = -\log P(\boldsymbol{p}|\boldsymbol{y}) = \frac{N_y-1}{2} \log \lVert \boldsymbol{r}(\boldsymbol{p})\rVert^2. \label{L-uniform}\tag{4.10}\]
+
+<p>After some calculations (which I have relegated to Appendix A), we see that
+we can approximate the Hessian as</p>
+
+\[\boldsymbol{H}_L(\boldsymbol{p}^\dagger)\approx \frac{N_y-1}{\lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2}\boldsymbol{J}^T_{r_w}(\boldsymbol{p}^\dagger) \boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger) \label{hessian-uniform}\tag{4.11},\]
+
+<p>which finally leads us to an approximation of the covariance matrix of the best fit
+parameters as</p>
+
+\[\boldsymbol{C}_{p^\dagger} \approx \frac{\lVert \boldsymbol{r}(\boldsymbol{p^\dagger})\rVert^2}{N_y-1} (\boldsymbol{J}^T_{r_w}(\boldsymbol{p}^\dagger) \boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger))^{-1}. \label{cov-uniform}\tag{4.12}\]
+
+<p>Note, that this particular expression for the covariance matrix holds only for the assumptions
+made in section 4.1 up to here. I’ll have more to say about the exact form of the
+covariance matrix, but I’ll say it in a dedicated section further below. Next,
+let’s see how the choice of prior influences our estimation of the covariance
+matrix of the best fit parameters.</p>
+
+<h2 id="42-jeffreys-prior">4.2 Jeffreys’ Prior</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Jeffreys_prior">Jeffreys’ prior</a> is another commonly
+used prior distribution that conveys gross ignorance about the scale of unknown
+parameters (Gel13, sections 2.8, 3.2). After performing the necessary calculations,
+which are tedious and therefore relegated to Appendix B, we obtain this prior
+as:</p>
+
+\[P(\boldsymbol{p},\sigma) \propto \frac{1}{\sigma^{N_p+1}} \sqrt{\text{det}\boldsymbol{J}_f^T(\boldsymbol{p}) \boldsymbol{W}^T \boldsymbol{W} \boldsymbol{J}_f(\boldsymbol{p})} \label{jeffreys-prior}\tag{4.13},\]
+
+<p>where \(\boldsymbol{J}_f\) is the Jacobian of \(f\) and \(\boldsymbol{W}\) is the
+weight matrix as defined in eq. \(\eqref{relative-weights-matrix}\). To obtain the
+posterior, we can again <a href="https://www.wolframalpha.com/input?i=int%281%2Fsigma%5E%28N%2BM%2B1%29*exp%28-1%2F%282*sigma%5E2%29*+r%5E2%29%29">use Wolfram Alpha</a>:</p>
+
+\[P(\boldsymbol{p}|\boldsymbol{y}) \propto  \sqrt{\text{det}\boldsymbol{J}_f^T(\boldsymbol{p}) \boldsymbol{W}^T \boldsymbol{W} \boldsymbol{J}_f(\boldsymbol{p})} \cdot (\lVert\boldsymbol{r}_w(\boldsymbol{p})\rVert^2)^{-\frac{N_y+N_p}{2}}. \label{posterior-jeffreys}\tag{4.14}\]
+
+<p>Strictly speaking that is all we can say about the posterior, since the first
+factor also depends on \(\boldsymbol{p}\). However, there are a few assumptions we
+can make to approximate the posterior.</p>
+
+<p>The second factor \((\lVert\boldsymbol{r}_w(\boldsymbol{p})\rVert^2)^{-\frac{N_y+N_p}{2}}\) in eq. \(\eqref{posterior-jeffreys}\) will typically be a very sharp
+peak around the least squares estimate \(\boldsymbol{p}^\dagger\).
+At least for a sufficienly large number of data points. Notice, that 
+\(\boldsymbol{J}_f^T (\boldsymbol{W}^T \boldsymbol{W})^{-1} \boldsymbol{J}_f\)
+is approximately \(\boldsymbol{W}^2 \boldsymbol{H}_f\), due to the diagonal structure
+of \(\boldsymbol{W}\), where \(\boldsymbol{H}_f\) is the Hessian of \(f\). It is 
+reasonable to assume that for most well-behaved functions, the determinant of the
+Hessian won’t exhibit a behavior that substantially alters the shape of the posterior.
+This is consistent with the fact that Jeffreys’s prior is a <em>noninformative</em> prior,
+which means that it should not greatly alter the value of the <em>maximum a posteriori</em>
+estimate, compared to the value of the maximum likelihood estimate (Gel13, sections 2.8, 3.2).
+Since the second factor is likely a narrow peak around \(\boldsymbol{p}^\dagger\),
+we can approximate the value \(\boldsymbol{J}_f^T (\boldsymbol{W}^T \boldsymbol{W})^{-1} \boldsymbol{J}_f\)
+by its value at \(\boldsymbol{p}^\dagger\), which is a constant. This finally
+leads us to an approximation of the posterior around \(\boldsymbol{p}^\dagger\)
+as:</p>
+
+\[P(\boldsymbol{p}|\boldsymbol{y}) \approx K^\dagger \cdot (\lVert\boldsymbol{r}_w(\boldsymbol{p})\rVert^2)^{-\frac{N_y+N_p}{2}}, \label{posterior-jeffreys-approx}\tag{4.15}\]
+
+<p>where we’ve absorbed all constants of proportionality into \(K^\dagger\). Now,
+using Laplace’s Approximation again, we can approximate the posterior as a normal
+distribution with the following covariance matrix:</p>
+
+\[\boldsymbol{C}_{p^\dagger} \approx \frac{\lVert \boldsymbol{r}(\boldsymbol{p^\dagger})\rVert^2}{N_y+N_p} (\boldsymbol{J}^T_{r_w}(\boldsymbol{p}^\dagger) \boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger))^{-1}. \label{cov-jeffreys}\tag{4.15}\]
+
+<p>Calculating the Hessian works analogous to the calculations in Appendix A. We’ll
+summarize and discuss the results so far in the next section.</p>
+
+<h1 id="5-summary-posteriors-best-parameters-and-covariances">5. Summary: Posteriors, Best Parameters, and Covariances</h1>
+
+<p>Okay, now let’s take a step back and see how our results can be summarized and
+examine how our results are linked to the least squares fitting approach from
+our introductory section. We have approximated all our posteriors in the form 
+of normal distributions</p>
+
+\[P(\boldsymbol{p}|\boldsymbol{y}) \approx K' \cdot \exp\left(-\frac{1}{2} (\boldsymbol{p}-\boldsymbol{p}^\dagger)^T\, \boldsymbol{C}_{p^\dagger}^{-1} (\boldsymbol{p}-\boldsymbol{p}^\dagger) \right),\label{posterior-approximation-generalized}\tag{5.1}\]
+
+<p>with appropriate constants \(K'\). The <em>maximum a posteriori</em> estimate for all
+cases was given as the minimizer of the sum of squared residuals eq. \(\eqref{lsqr-fitting}\):</p>
+
+\[\boldsymbol{p}^\dagger = \arg\min_{\boldsymbol{p}} \frac{1}{2} \lVert W \left(\boldsymbol{y} - \boldsymbol{f}(\boldsymbol{p})\right) \rVert^2 \tag{5.2},\]
+
+<p>where the choice of the weight matrix \(\boldsymbol{W} \in \mathbb{R}^{N_y \times N_y}\)
+depends on our choice of prior. We have also calculated the covariance matrices
+for the best fit parameters \(\boldsymbol{p}^\dagger\), which also depend on our
+choice of prior. However, all of them can be generalized as</p>
+
+\[\boldsymbol{C}_{p^\dagger} \approx \hat{\sigma}^2 \, (\boldsymbol{J}^T_{r_w}(\boldsymbol{p}^\dagger) \boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger))^{-1} = \hat{\sigma}^2 \, (\boldsymbol{J}_f^T(\boldsymbol{p}^\dagger) \; \boldsymbol{W}^T\boldsymbol{W} \;\boldsymbol{J}_f(\boldsymbol{p}^\dagger))^{-1} , \label{cov-sigmat-hat}\tag{5.3}\]
+
+<p>with a scalar \(\hat{\sigma}^2 \in \mathbb{R}\) depending on our choice of prior. As before,
+\(\boldsymbol{J}_{r_w}\) is the Jacobian of \(\boldsymbol{r}_w\) and
+\(\boldsymbol{J}_{f}\) is the Jacobian of the model function
+\(\boldsymbol{f}(\boldsymbol{p})\). The following table shows how the weight
+matrix and the factor \(\hat{\sigma}^2\) are related to priors:</p>
+
+<table>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            caption-side: bottom; /* Position the caption at the bottom */
+        }
+        caption {
+            text-align: left;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+	<tbody>
+		<tr>
+			<th><b>Prior Knowledge of Std Devs.</b></th>
+			<th>$$\hat{\sigma}^2$$</th>
+			<th>$$\boldsymbol{W}$$</th>
+			<th><b>Remarks</b></th>
+		</tr>
+		<tr>
+			<td>Known <br /> (w/ Uniform prior for \(\boldsymbol{p}\))</td>
+			<td>\(1\)</td>
+			<td>\(\text{diag}(1/\sigma_1,\dots,1/\sigma_{N_y})\)</td>
+			<td>\(\sigma_j\): known standard deviation at index \(j\)</td>
+		</tr>
+		<tr>
+			<td>Known Relative Scaling <br /> (Uniform Prior for \(\boldsymbol{p},\sigma\))</td>
+			<td>\(\frac{\lVert \boldsymbol{r}(\boldsymbol{p^\dagger})\rVert^2}{N_y-1}\)</td>
+			<td rowspan="2">\(\text{diag}(1/w_1,\dots,1/w_{N_y})\)</td>
+			<td rowspan="2">Absolute magnitude of standard deviations is unknown, but we know \(\sigma_j = w_j \sigma\), with \(w_j\) known and \(\sigma\) unknown.</td>
+		</tr>
+		<tr>
+			<td>Known Relative Scaling <br /> (Jeffreys' Prior for \(\boldsymbol{p},\sigma\))</td>
+			<td>\(\frac{\lVert \boldsymbol{r}(\boldsymbol{p^\dagger})\rVert^2}{N_y+N_p}\)</td>
+		</tr>
+	</tbody>
+  <caption>Table 1: Influence of the choice of prior on the weights and the covariance matrix.</caption>
+</table>
+
+<p>Since all of our posterior distributions are given as normal distributions (at
+least approximately), the covariance matrices allow us to give credible intervals
+for our best fit parameters<sup id="fnref:covpar" role="doc-noteref"><a href="#fn:covpar" class="footnote" rel="footnote">4</a></sup>. While our choice of prior does not influence the best
+fit parameters themselves, we can see that it does influence the credible intervals
+around them.</p>
+
+<h2 id="52-discussing-the-covariance-and-comparison-to-prior-art">5.2 Discussing the Covariance and Comparison to Prior Art</h2>
+
+<p>Although this is already a long article, I want to briefly discuss the values
+for \(\hat{\sigma}^2\) for unknown standard deviations. For uniform priors,
+the value of \(\hat{\sigma}^2\) is the well-known
+<a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">estimator of sample variance</a>
+around the best fit parameters. The result for the Jeffreys’s prior is interesting
+because it looks very similar, but the denominator is \(N_y+N_p\) instead of
+\(N_y-1\). This is noteworthy, but for typical least squares problems where \(N_p \ll N_y\), this won’t
+make much of a difference. However, it’s important
+to restate, that all our derivations assumed that the model is indeed the
+correct one. Thus, this result doesn’t imply that using
+models with more parameters to fit unknown data is better than using models with
+fewer parameters.</p>
+
+<p>If you’ve used least squares fitting libraries, you might have come across
+a strikingly similar formula for the covariance matrix, with the difference that 
+\(\hat{\sigma}^2=\lVert \boldsymbol{r}(\boldsymbol{p^\dagger})\rVert^2/(N_y-N_p)\),
+where \(N_y - N_p\) is typically called the <em>degrees of freedom</em> of the fit. This
+formula has always seemed reasonable to me, probably because I’ve gotten used to it,
+but I have never seen it derived. I assume it’s a Frequentist result, but
+I honestly don’t know. It might just as well be a Bayesian
+result, obtained with different priors or different approximations.
+Again, for \(N_p \ll N_y\) the differences are probably neglegible.
+However, I feel it’s valuable to understand, which assumptions those
+formulas imply: for example, <a href="http://ceres-solver.org/nnls_covariance.html">Ceres Solver</a> 
+gives the same formulas that we derived for known standard derivations, while the
+<a href="https://www.gnu.org/software/gsl/doc/html/nls.html#covariance-matrix-of-best-fit-parameters">GNU scientific library</a> (GSL)
+gives the (suspected) frequentist \(\hat{\sigma}^2\).</p>
+
+<p>Initially, I had assumed that either Jeffreys’ prior or the uniform prior will
+give me the \(\hat{\sigma}^2\) that GSL uses and I was surprised neither of them did.
+I’m pretty confident we can construct a prior that gives us that expression,
+maybe using a conjugate prior (which would be an Inverse-Gamma) for \(\sigma\), with
+carefully chosen parameters and a uniform prior for \(\boldsymbol{p}\). However, I don’t know how I can
+argue that this is a good prior, other than that it produces the results I expected.
+That might or might not be a good argument, because I don’t know why I expected
+those results in the first place.</p>
+
+<h1 id="6-credible-intervals-for-the-best-fit-model">6. Credible Intervals for the Best Fit Model</h1>
+
+<p>Before we embark on this final step, let’s look at what we have done above,
+when we gave expressions for the covariance matrix: we have related
+how the uncertainties in our observations \(\boldsymbol{y}\)
+propagate to the uncertainties of our best fit parameters 
+\(\boldsymbol{p}^\dagger\). The covariance matrix of the best fit parameters 
+allows us to give confidence intervals of the parameters via their standard deviations,
+since the posterior distributions for the parameters were approximately normal.</p>
+
+<p>Now, we will do the same thing again, in a way. We’ll find a way to approximate the
+posterior for our best fit solution \(\boldsymbol{f}^\dagger = \boldsymbol{f}(\boldsymbol{p^\dagger})\)
+as a normal distribution. Then, we will calculate the covariance matrix,
+which gives us the standard deviations, for the elements of \(\boldsymbol{f}^\dagger\).
+If we know those, we can give credible intervals around the entries of our best
+fit solution, which together make up the credible band.</p>
+
+<p>We treat \(\boldsymbol{z}=\boldsymbol{f}(\boldsymbol{p})\) as a new variable
+and we are interested in the probability distribution of \(\boldsymbol{z}\).
+We can obtain it from the posterior probability distribution of \(\boldsymbol{p}\)
+by performing a <a href="https://en.wikipedia.org/wiki/Probability_density_function#Function_of_random_variables_and_change_of_variables_in_the_probability_density_function">change of variables</a>,
+where I am following the notation of Sivia and Skilling (Siv06):</p>
+
+\[P(\boldsymbol{z}|\boldsymbol{y}) = P(\boldsymbol{p}=\boldsymbol{f}^{-1}(\boldsymbol{z})|\boldsymbol{y})\cdot \text{det} \frac{d\boldsymbol p}{d \boldsymbol{z}} \label{change-of-var}\tag{6.1},\]
+
+<p>where the second factor on the right hand side is the determinant of the Jacobian of \(\boldsymbol{p}\)
+with respect to \(\boldsymbol{z}\). To get a grip on this expression, we approximate \(\boldsymbol{y}\)
+around the best fit parameters by a first order Taylor series:</p>
+
+\[\boldsymbol{z} = \boldsymbol{f}(\boldsymbol{p}) \approx \boldsymbol{f}(\boldsymbol{p}^\dagger) + \boldsymbol{J}_f(\boldsymbol{p}^\dagger)\,(\boldsymbol{p}-\boldsymbol{p}^\dagger), \tag{6.2}\]
+
+<p>where \(\boldsymbol{J}_f(\boldsymbol{p}^\dagger)\) is the Jacobian of \(\boldsymbol{f}(\boldsymbol{p})\)
+evaluated at \(\boldsymbol{p}^\dagger\). Note, that there is nothing about \(\boldsymbol{p}^\dagger\)
+that would make this approximation particularly well-suited and we
+use it because it is analytically convenient<sup id="fnref:approx-f" role="doc-noteref"><a href="#fn:approx-f" class="footnote" rel="footnote">5</a></sup>. This allows us to write</p>
+
+\[\boldsymbol{p} = \boldsymbol{f}^{-1}(\boldsymbol{z}) \approx \boldsymbol{J}_f^{-1}(\boldsymbol{p}^\dagger) (\boldsymbol{z}-\boldsymbol{f}(\boldsymbol{p}^\dagger))+\boldsymbol{p}^\dagger \label{p-of-z} \tag{6.3}\]
+
+<p>Now we use eq. \(\eqref{p-of-z}\) and our approximation for the posterior eq. 
+\(\eqref{posterior-approximation-generalized}\) and plug it into eq. \(\eqref{change-of-var}\).
+Note, that have to choose the covariance matrix \(\boldsymbol{C}_{p^\dagger}\) that corresponds
+to our prior assumptions, but the general functional form of the posterior is
+always the same. This leads us to:</p>
+
+\[\begin{eqnarray}
+P(\boldsymbol{z}|\boldsymbol{y}) &amp;\approx&amp; K''\cdot \exp\left(-\frac{1}{2} (\boldsymbol{J_f}^{-1}(\boldsymbol{p}^\dagger)(\boldsymbol{z}-\boldsymbol{f}(\boldsymbol{p}^\dagger)))^T\, \boldsymbol{C}_{p^\dagger}^{-1} (\boldsymbol{J_f}^{-1}(\boldsymbol{p}^\dagger)(\boldsymbol{z}-\boldsymbol{f}(\boldsymbol{p}^\dagger))) \right) \\
+  &amp;=&amp;  K''\cdot \exp\left(-\frac{1}{2} (\boldsymbol{z}-\boldsymbol{f}(\boldsymbol{p}^\dagger))^T\, (\boldsymbol{J_f}^T)^{-1}(\boldsymbol{p}^\dagger) \boldsymbol{C}_{p^\dagger}^{-1} \boldsymbol{J_f}^{-1}(\boldsymbol{p}^\dagger)(\boldsymbol{z}-\boldsymbol{f}(\boldsymbol{p}^\dagger)) \right) \\
+  &amp;=&amp;  K''\cdot \exp\left(-\frac{1}{2} (\boldsymbol{z}-\boldsymbol{f}(\boldsymbol{p}^\dagger))^T\, (\boldsymbol{J_f}(\boldsymbol{p}^\dagger) \boldsymbol{C}_{p^\dagger} \boldsymbol{J_f}^{T}(\boldsymbol{p}^\dagger))^{-1} (\boldsymbol{z}-\boldsymbol{f}(\boldsymbol{p}^\dagger)) \right) \\
+\end{eqnarray}\]
+
+<p>where we have absorbed all constant factors into \(K''\). Yet again, this is
+a <a href="https://en.wikipedia.org/wiki/Multivariate_normal_distribution">multivariate normal</a>,
+with a covariance matrix \(\boldsymbol{C}_{f^\dagger}\) given by</p>
+
+\[\boldsymbol{C}_{f^\dagger} = \boldsymbol{J_f}(\boldsymbol{p}^\dagger) \boldsymbol{C}_{p^\dagger} \boldsymbol{J_f}^{T}(\boldsymbol{p}^\dagger) \label{cov-f}\tag{6.4}.\]
+
+<p>In essence, we have derived the law of <a href="https://en.wikipedia.org/wiki/Propagation_of_uncertainty">Propagation of Uncertainty</a>
+for our special case<sup id="fnref:prop-uncertainty" role="doc-noteref"><a href="#fn:prop-uncertainty" class="footnote" rel="footnote">6</a></sup>. Eq. \(\eqref{cov-f}\) is the desired covariance
+of our best fit model function values.</p>
+
+<h2 id="61-from-covariance-matrix-to-credible-intervals">6.1 From Covariance Matrix to Credible Intervals</h2>
+
+<p>So now that we have the covariance matrix, how do we use it to construct
+<a href="https://en.wikipedia.org/wiki/Credible_interval#Contrasts_with_confidence_interval">credible intervals</a>
+around the best fit function? Luckily we already know everything we need.</p>
+
+<p>We have approximated our best fit solution \(\boldsymbol{f}^\dagger= \boldsymbol{f}(\boldsymbol{p^\dagger})\) 
+as normally distributed with a covariance matrix of \(\boldsymbol{C}_{f^\dagger}\). That means
+that the variance for each entry \(f_j^\dagger\) of \(\boldsymbol{f}^\dagger\) is on index \(j\)
+of the diagonal of \(\boldsymbol{C}_{f^\dagger}\). Let’s express this in vector notation:</p>
+
+\[(\sigma_{f_1^\dagger}^2,\dots,\sigma^2_{f_{N_y}^\dagger})^T = \text{diag} (\boldsymbol{C}_{f^\dagger}). \label{variance-vector}\tag{6.5}\]
+
+<p>It would be numerically wasteful to calculate the whole matrix \(\boldsymbol{C}_{f^\dagger}\)
+just to then immediately discard everything except the diagonal elements. There
+is a better way. To see this, we write the Jacobian as a collection using row-vectors:</p>
+
+\[\boldsymbol{J}_f(\boldsymbol{p}^\dagger) = \begin{bmatrix}
+- \boldsymbol{j}_1^T -\\
+- \boldsymbol{j}_2^T -\\
+\vdots \\
+- \boldsymbol{j}_n^T -
+\end{bmatrix},\]
+
+<p>where \(\boldsymbol{j}_i^T\) is the \(i\)-th <em>row</em> of the Jacobian of \(\boldsymbol{f}\) at the
+best fit parameters. Now we can write the variance for each element of \(\boldsymbol{f}\)
+as</p>
+
+\[\sigma_{f_i^\dagger}^2 = \boldsymbol{j}_i^T \boldsymbol{C}_{p^\dagger} \boldsymbol{j}_i, \label{efficient-sigma-f}\tag{6.6}\]
+
+<p>where, again \(\boldsymbol{j}_i^T\) is a <em>row</em> vector representing a <em>row</em> of the Jacobian.
+Wolberg arrives at the same formula using a slightly different approach (Wol06, section 2.5).
+Using this way of calculating the variances saves a significant amount of computations
+and should be preferred to calculating the complete matrix product. The credible
+intervals for a given probability can now be obtained using the quantile function
+of the normal distribution. So for each element \(f_i^\dagger\) of the best fit,
+we know that the value is in the following range with a probability of \(\rho \in (0,1)\):</p>
+
+\[f_i^\dagger \pm \Phi^{-1}\left(\frac{\rho+1}{2}\right) \cdot \sigma_{f_i^\dagger}  \tag{6.7}\]
+
+<p>where \(\Phi^-1\) is the <a href="https://en.wikipedia.org/wiki/Normal_distribution#Quantile_function">quantile function of the normal distribution</a>.
+Using this, we can calculate this interval for each of the elements of the best fit, which
+will give us a credible band around the best fit model.</p>
+
+<p>As a final note to this already very long article, let’s note that Wolberg gives
+an almost identical expression for the confidence bands around the best fit
+parameters (Wol06, section 2.6). The only difference is that he uses the 
+quantile function of Student’s t-distribution instead of the Gaussian quantile
+function, but unfortunately no rationale is provided for that. I can only speculate
+that this is due to his expressions being <em>confidence bands</em>. Those are a Frequentist concept
+and they <a href="https://en.wikipedia.org/wiki/Credible_interval#Contrasts_with_confidence_interval">don’t typically align</a>
+with Bayesian credible intervals, although they serve a similar conceptual purpose.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>I know this article was a <em>tour de force</em> through the method of nonlinear least squares
+fitting from the ground up. I hope that seeing it like this helps others (as it helped
+me) to demystify and understand the method and especially the statistical analysis
+of the parameters and the best fit model. The latter part is often overlooked. 
+If your usecase is not covered by this article, I hope that you’ll find the tools
+here to modify the calculations according to your needs. And finally, if you find
+errors please reach out via mail or by commenting below.</p>
+
+<h1 id="references">References</h1>
+<p>(Noc06) J Nocedal &amp; SJ Wright: “Numerical Optimization”, Springer, 2nd ed, 2006</p>
+
+<p>(Siv06) D Sivia &amp; J Skilling: “Data Analysis - A Bayesian Tutorial”, Oxford University Press, 2<sup>nd</sup> ed, 2006</p>
+
+<p>(Wol06) J Wolberg: “Data Analysis Using the Method of Least Squares”, Springer, 2006</p>
+
+<p>(Gel13) A Gelman <em>et al</em>: “Bayesian Data Analysis”, CRC Press, 3<sup>rd</sup> ed, 2013 (<a href="http://www.stat.columbia.edu/~gelman/book/">freely available from the author</a>)</p>
+
+<p>(Kal22) M Kaltenbach: “The Levenberg-Marquardt Method and its Implementation in Python”, Diploma Thesis, Uni Konstanz, 2022, (<a href="http://nbn-resolving.de/urn:nbn:de:bsz:352-2-1ofyba49ud2jr5">link</a>)</p>
+
+<h1 id="appendix">Appendix</h1>
+
+<h2 id="a-calculating-the-hessian-of-log-lvert-boldsymbolrboldsymbolp-rvert2">A. Calculating the Hessian of \(\log \lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\)</h2>
+
+<p>To derive eq. \(\eqref{hessian-uniform}\) we need to calculate the Hessian of 
+\(\log \lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\). Let’s do the calculation
+element-wise by repeatedly applying the chain rule.</p>
+
+\[\begin{eqnarray}
+\boldsymbol{H}\{\log \lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\}_{kl} &amp;=&amp; \frac{\partial^2}{\partial p_k \partial p_l}\log\lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2 \\
+ &amp;=&amp; \frac{\partial}{\partial p_k} \left(\frac{1}{\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2} \cdot \frac{\partial}{\partial p_l}\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2\right) \\
+ &amp;=&amp; \frac{\partial}{\partial p_k} \frac{1}{\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^{2}}\cdot \frac{\partial}{\partial p_l}\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2+\frac{\partial^2}{\partial p_k\partial p_l}\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2 \\ 
+ &amp;=&amp; \frac{\partial}{\partial p_k} \frac{1}{\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^{2}}\cdot \frac{\partial}{\partial p_l}\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2+ \frac{1}{\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2}\boldsymbol{H}\{\lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\}_{kl}\\ 
+\end{eqnarray}\]
+
+<p>We are interested in evaluating the Hessian at an extremum of \(\log \lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\),
+which implies that \(\nabla \log\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2=\boldsymbol{0}\),
+which implies \(\nabla \lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2=\boldsymbol{0}\),
+which implies \(\frac{\partial}{\partial p_l} \lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2=0\)
+for all indices \(l\). That makes the first term in the equation vanish, so that
+we can write the Hessian of the log transformed sum of squares as:</p>
+
+\[\boldsymbol{H}\{\log \lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\}(\boldsymbol{p}^\dagger) = \frac{1}{\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2}\boldsymbol{H}\{\lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\}(\boldsymbol{p}^\dagger)\]
+
+<p>We know an approximation for the Hessian of \(\frac{1}{2}\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2\)
+from eq. \(\eqref{hessian-g-approx}\), so that we can write:</p>
+
+\[\boldsymbol{H}\{\log \lVert \boldsymbol{r}(\boldsymbol{p}) \rVert^2\}(\boldsymbol{p}^\dagger) \approx \frac{2}{\lVert\boldsymbol{r}(\boldsymbol{p}) \rVert^2} \boldsymbol{J}_{r_w}^T(\boldsymbol{p}^\dagger)\boldsymbol{J}_{r_w}(\boldsymbol{p}^\dagger)\]
+
+<p>Now  \(\eqref{hessian-uniform}\) follows trivially.</p>
+
+<h2 id="b-calculating-jeffreys-prior">B. Calculating Jeffreys’ Prior</h2>
+
+<p>To calculate <a href="https://en.wikipedia.org/wiki/Jeffreys_prior">Jeffreys’ prior</a> for
+the likelihood in \(\eqref{posterior-rel-sigma-r2}\), we
+have to calculate the Fisher information matrix. For a given likelihood
+\(P(\boldsymbol{y}|\boldsymbol{\theta})\), where \(\boldsymbol{\theta}\)
+are the parameters, the elements of the <a href="https://en.wikipedia.org/wiki/Fisher_information#Matrix_form">Fisher information matrix</a>
+\(\boldsymbol{I}(\boldsymbol{\theta}\) are given as:</p>
+
+\[[\boldsymbol{I}(\boldsymbol{\theta})]_{kl} = E\left[ \left. \left(\frac{\partial}{\partial \theta_k}\log P(\boldsymbol{y}|\boldsymbol{\theta}) \right)\left(\frac{\partial}{\partial \theta_l}\log P(\boldsymbol{y}|\boldsymbol{\theta}) \right) \right| \boldsymbol{\theta}\right],\]
+
+<p>where \(E[ \boldsymbol{\phi}(\boldsymbol{y})\vert\boldsymbol{\theta}]=\int \boldsymbol{\phi}(\boldsymbol{y}) P(\boldsymbol{y}|\boldsymbol{\theta}) \text{d}\boldsymbol{y}\) denotes the expected value 
+of \(\boldsymbol{\phi}(\boldsymbol{y})\). This is a volume integral over
+\(\boldsymbol{y}\), but we won’t actually have to explicitly perform the integration in the
+following derivations. For the following sections, we’ll abbreviate \(E[\boldsymbol{\phi}(\boldsymbol{y})\vert\boldsymbol{\theta}]\)
+as \(E[\boldsymbol{\phi}(\boldsymbol{y})]\) purely for notational convenience.</p>
+
+<p>In our case, the parameter vector \(\boldsymbol{\theta}\) consists of the elements 
+of the vector \(\boldsymbol{p}\) and the single scalar \(\sigma\):</p>
+
+\[\boldsymbol{\theta} = (\boldsymbol{p}^T,\sigma)^T.\]
+
+<p>That means \(\boldsymbol{\theta}\in \mathbb{R}^{N_p+1}\), which means the 
+derivative \(\partial/\partial \theta_k = \partial/\partial p_k\) for \(k=1,\dots,N_p\) 
+and \(\partial/\partial \theta_{N_p+1} = \partial/\partial \sigma\). That means
+we can write the Fisher information matrix as a block matrix like so:</p>
+
+\[I(\boldsymbol{p},\sigma) = \left(\begin{matrix} \boldsymbol{I}_{PP}(\boldsymbol{p},\sigma) &amp; \boldsymbol{v}_{PS}(\boldsymbol{p},\sigma) \\
+                           \boldsymbol{v}_{PS}^T(\boldsymbol{p},\sigma) &amp; I_{\sigma\sigma}, \\
+\end{matrix}\right)\in \mathbb{R}^{N_p+1 \;\times\; N_p+1}\]
+
+<p>with the square matrix \(\boldsymbol{I}_{PP} \in \mathbb{R}^{N_p \times N_p}\), 
+the column vector \(\boldsymbol{v}_{PS} \in \mathbb{R}^{N_p}\), and the
+scalar entry \(I_{\sigma\sigma} \in \mathbb{R}\). The elements of the matrices are as follows:</p>
+
+\[\begin{eqnarray}
+[\boldsymbol{I}_{PP}(\boldsymbol{p},\sigma)]_{kl} &amp;=&amp; E\left[ \frac{\partial \mathcal{L}}{\partial p_k} \cdot \frac{\partial \mathcal{L}}{\partial p_l} \right]\\
+[\boldsymbol{v}_{PS}(\boldsymbol{p},\sigma)]_k &amp;=&amp; E\left[ \frac{\partial \mathcal{L}}{\partial p_k} \cdot \frac{\partial \mathcal{L}}{\partial \sigma} \right]\\
+I_{\sigma\sigma}(\boldsymbol{p},\sigma) &amp;=&amp; E\left[ \frac{\partial \mathcal{L}}{\partial \sigma} \cdot \frac{\partial \mathcal{L}}{\partial \sigma} \right]\\
+\end{eqnarray}\]
+
+<p>where we defined \(\mathcal{L}\) as follows:</p>
+
+\[\begin{eqnarray}
+\mathcal{L}(\boldsymbol{p},\sigma) &amp;:=&amp; \log P(\boldsymbol{y}|\boldsymbol{p},\sigma) \\
+ &amp;=&amp; -N_y\log\sigma-\frac{1}{2\sigma^2}\sum_j \frac{(y_j-f_j(\boldsymbol{p}))^2}{w_j^2}+\text{const.}, \\
+\end{eqnarray}\]
+
+<p>which means we can calculate the partial derivatives like so:</p>
+
+\[\begin{eqnarray}                    
+\frac{\partial \mathcal{L}}{\partial \sigma} (\boldsymbol{p},\sigma) &amp;=&amp; -\frac{N_y}{\sigma}+\frac{1}{\sigma^3}\sum_j \frac{(y_j-f_j(\boldsymbol{p}))^2}{w_j^2}\\
+\frac{\partial \mathcal{L}}{\partial p_k} (\boldsymbol{p},\sigma) &amp;=&amp; \frac{1}{\sigma^2}\sum_j \frac{y_j-f_j(\boldsymbol{p})}{w_j^2}\cdot\frac{\partial f_j}{\partial p_k}(\boldsymbol{p}).
+\end{eqnarray}\]
+
+<p>Now let’s calculate the elements of the matrix, starting with the 
+scalar \(I_{\sigma\sigma}\).</p>
+
+<h2 id="b1-calculating-i_sigmasigma">B.1 Calculating \(I_{\sigma\sigma}\)</h2>
+<p>\(\begin{eqnarray}
+I_{\sigma\sigma} &amp;=&amp; E\left[ \left( \frac{-N_y\sigma^2+\sum_j \frac{(y_j-f_j(\boldsymbol{p}))^2}{w_j^2}}{\sigma^3} \right)^2 \right]\\
+ &amp;=&amp; \frac{1}{\sigma^6} E \left[ \sum_{i,j} \frac{(y_i-f_i(\boldsymbol{p}))^2 (y_j-f_j(\boldsymbol{p}))^2}{w_i^2 w_j^2}  \right] - \frac{2 N_y}{\sigma^4} E\left[\sum_j \frac{(y_j-f_j(\boldsymbol{p}))^2}{w_j^2}\right]+\frac{N_y^2}{\sigma^2} E[1] .
+\end{eqnarray}\)</p>
+
+<p>The key to calculate the expectected values inside the sums are, is to
+understand that the \(y_j-f_j(\boldsymbol{p})\) are independent variables, with Gaussian
+distributions centered around a mean value \(\mu_j = 0\)
+and with a standard deviation of \(\sigma_j = w_j \sigma\). This allows us
+to write the first term of the sum:</p>
+
+\[\begin{eqnarray}
+&amp;E&amp; \left[ \sum_{i,j} \frac{(y_i-f_i(\boldsymbol{p}))^2 (y_j-f_j(\boldsymbol{p}))^2}{w_i^2 w_j^2}  \right] = \sum_{i,j} \frac{E\left[(y_i-f_i(\boldsymbol{p}))^2 (y_j-f_j(\boldsymbol{p}))^2\right]}{w_i^2 w_j^2} \\
+&amp;=&amp; \sum_{i,j; i=j} \frac{E\left[(y_i-f_i(\boldsymbol{p}))^2 (y_j-f_j(\boldsymbol{p}))^2\right]}{w_i^2 w_j^2} + \sum_{i,j; i\neq j} \frac{E\left[(y_i-f_i(\boldsymbol{p}))^2 (y_j-f_j(\boldsymbol{p}))^2\right]}{w_i^2 w_j^2} \\
+&amp;=&amp; \sum_{i} \frac{E\left[(y_i-f_i(\boldsymbol{p}))^4\right]}{w_i^4} + \sum_{i,j; i\neq j} \frac{E\left[(y_i-f_i(\boldsymbol{p}))^2\right] E\left[(y_j-f_j(\boldsymbol{p}))^2\right]}{w_i^2 w_j^2} \\
+&amp;=&amp; \sum_{i} \frac{3\sigma_i^4}{w_i^4} + \sum_{i,j; i\neq j} \frac{\sigma_i^2 \sigma_j^2}{w_i^2 w_j^2} 
+= 3\sigma^4 \,\sum_{i} 1+ \sigma^4 \sum_{i,j; i\neq j} 1 
+= 3 N_y\sigma^4 + \sigma^4 (N_y^2 - N_y) \\
+ &amp;=&amp; 2 N_y \sigma^4 + N_y^2 \sigma^4, \\
+\end{eqnarray}\]
+
+<p>where we have used the facts that:</p>
+
+<ul>
+  <li>the expected value of the product of statistically independent random variables
+is the product of the expected values,</li>
+  <li>the second <a href="https://en.wikipedia.org/wiki/Normal_distribution#Moments">central moment</a>
+of a Gaussian is its variance \(E[(y_j-f_j(\boldsymbol{p})^2]=\sigma_j^2=w_j^2\sigma^2\).</li>
+  <li>the fourth central moment is \(E[(y_j-f_j(\boldsymbol{p})^4]=3\sigma_j^2=3 w_j^2\sigma^2\)</li>
+</ul>
+
+<p>We also use this to calculate the next term in the sum for \(I_{\sigma\sigma}\):</p>
+
+\[\begin{eqnarray}
+E\left[\sum_j \frac{(y_j-f_j(\boldsymbol{p}))^2}{w_j^2}\right] &amp;=&amp;\sum_j \frac{E[(y_j-f_j(\boldsymbol{p}))^2]}{w_j^2} \\ 
+&amp;=&amp; \sum_j \frac{w_j^2\sigma^2}{w_j^2} = N_y \sigma^2.\\ 
+\end{eqnarray}\]
+
+<p>Since \(E[1]=1\), we can put everyting togeter to obtain</p>
+
+\[I_{\sigma\sigma}=\frac{2 N_y+N_y^2-2N_y^2+N_y^2}{\sigma^2}=\frac{2 N_y}{\sigma^2}.\]
+
+<h2 id="b2-calculating-v_ps_k1">B.2 Calculating \([v_{PS}]_{k1}\)</h2>
+
+<p>The elements of the column vector \(\boldsymbol{v}_{PS}\) are calculated as:</p>
+
+\[\begin{eqnarray}
+[\boldsymbol{v}_{PS}]_k &amp;=&amp; E\left[ \left(-\frac{N_y}{\sigma}+\frac{1}{\sigma^3}\sum_j \frac{(y_j-f_j(\boldsymbol{p}))^2}{w_j^2} \right)\cdot \left(\frac{1}{\sigma^2}\sum_j \frac{y_j-f_j(\boldsymbol{p})}{w_j^2}\cdot\frac{\partial f_j}{\partial p_k}(\boldsymbol{p}) \right) \right] \\
+ &amp;=&amp; -\frac{N_y}{\sigma^3}\sum_j \frac{E[y_j-f_j(\boldsymbol{p})]}{w_j^2}\cdot\frac{\partial f_j}{\partial p_k}(\boldsymbol{p}) + \frac{1}{\sigma^5}\sum_{i,j} \frac{E[(y_j-f_j(\boldsymbol{p}))^2 \cdot (y_i-f_i)]}{w_i^2 w_j^2} \\
+ &amp;=&amp; 0 + \frac{1}{\sigma^5}\sum_{i,j;i=j} \frac{E[(y_j-f_j(\boldsymbol{p}))^2 \cdot (y_i-f_i)]}{w_i^2 w_j^2} + \frac{1}{\sigma^5}\sum_{i,j;i\neq j} \frac{E[(y_j-f_j(\boldsymbol{p}))^2 \cdot (y_i-f_i)]}{w_i^2 w_j^2} \\
+ &amp;=&amp; 0 + \frac{1}{\sigma^5}\sum_{j} \frac{E[(y_j-f_j(\boldsymbol{p}))^3]}{w_i^2 w_j^2} + \frac{1}{\sigma^5}\sum_{i,j;i\neq j} \frac{E[(y_j-f_j(\boldsymbol{p}))^2 \cdot (y_i-f_i)]}{w_i^2 w_j^2} \\
+ &amp;=&amp; 0 + 0 + \frac{1}{\sigma^5}\sum_{i,j;i\neq j} \frac{E[(y_j-f_j(\boldsymbol{p}))^2 \cdot (y_i-f_i)]}{w_i^2 w_j^2} \\
+ &amp;=&amp; 0 + 0 + \frac{1}{\sigma^5}\sum_{i,j;i\neq j} \frac{E[(y_j-f_j(\boldsymbol{p}))^2] \cdot E[(y_i-f_i)]}{w_i^2 w_j^2} \\
+ &amp;=&amp; 0 + 0 + 0 = 0,
+\end{eqnarray}\]
+
+<p>where we again have used the rule about the expected value of independent
+random variables and the facts that \(E[y_j-f_j(\boldsymbol{p})]=0\),
+and the third central moment of a Gaussian is \(E[(y_j-f_j(\boldsymbol{p}))^3]=0\).</p>
+
+<h2 id="b3-calculating-i_pp_kl">B.3 Calculating \([I_{PP}]_{kl}\)</h2>
+
+<p>Now for the final piece of the Fisher information matrix:</p>
+
+\[\begin{eqnarray}
+[\boldsymbol{I}_{PP}(\boldsymbol{p},\sigma)]_{kl} &amp;=&amp; E\left[\left(\frac{1}{\sigma^2}\sum_j \frac{y_j-f_j(\boldsymbol{p})}{w_j^2}\frac{\partial f_j(\boldsymbol{p})}{\partial p_k}\right)\cdot\left(\frac{1}{\sigma^2}\sum_i \frac{y_i-f_i(\boldsymbol{p})}{w_j^2}\frac{\partial f_i(\boldsymbol{p})}{\partial p_l}\right)\right] \\
+ &amp;=&amp; \frac{1}{\sigma^4} \sum_{i,j} \frac{\partial f_j(\boldsymbol{p})}{\partial p_k}\frac{\partial f_i(\boldsymbol{p})}{\partial p_l} \frac{1}{w_i^2 w_j^2} E[(y_j-f_j(\boldsymbol{p}))(y_i-f_i(\boldsymbol{p}))]
+\end{eqnarray}\]
+
+<p>We recognize the \(E[(y_j-f_j(\boldsymbol{p}))(y_i-f_i(\boldsymbol{p}))]=\sigma_{ij}\) as the
+covariance of \(y_i\), \(y_j\). Since we assume statistical independence, we can
+write this as</p>
+
+\[\sigma_{ij} = \left\{
+\begin{matrix} \sigma_j^2 &amp;; j = i \\
+               0 &amp;; j \neq i .\\
+\end{matrix} \right.\]
+
+<p>And since we know \(\sigma_j = w_j \sigma\), it follows that</p>
+
+\[\begin{eqnarray}
+[\boldsymbol{I}_{PP}(\boldsymbol{p},\sigma)]_{kl} &amp;=&amp; \frac{1}{\sigma^2} \sum_{j} \frac{\partial f_j(\boldsymbol{p})}{\partial p_k}\frac{1}{w_j^2} \frac{\partial f_i(\boldsymbol{p})}{\partial p_l} \\
+ &amp;=&amp; \frac{1}{\sigma^2} \left[ \boldsymbol{J}_f^T(\boldsymbol{p}) \boldsymbol{W}^T \boldsymbol{W} \boldsymbol{J}_f(\boldsymbol{p}) \right]_{kl}
+\end{eqnarray}\]
+
+<p>where \(\boldsymbol{J}_f\) is the Jacobian of \(f\) and \(\boldsymbol{W}\) is the
+weight matrix as defined in eq. \(\eqref{relative-weights-matrix}\).</p>
+
+<h2 id="jeffreys-prior-from-the-fisher-information-matrix">Jeffreys’ Prior from the Fisher Information Matrix</h2>
+
+<p>Now, putting it all together, our Fisher information matrix is a block-diagonal
+matrix like this:</p>
+
+\[\boldsymbol{I}(\boldsymbol{p},\sigma) =
+\frac{1}{\sigma^2}
+\left(
+\begin{matrix}
+ \boldsymbol{J}_f^T(\boldsymbol{p}) \boldsymbol{W}^T \boldsymbol{W} \boldsymbol{J}_f(\boldsymbol{p}) &amp; \boldsymbol{0} \\
+ \boldsymbol{0} &amp;  2 N_y\\
+\end{matrix}
+\right)\]
+
+<p>Jeffreys’ prior is calculated as the square root of the determinant of the Fisher
+information matrix. Using the rules for the determinants of <a href="https://en.wikipedia.org/wiki/Determinant#Immediate_consequences">scaled matrices</a>
+and for <a href="https://en.wikipedia.org/wiki/Determinant#Block_matrices">block diagonal matrices</a>,
+we can calculate it as:</p>
+
+\[\begin{eqnarray}
+P(\boldsymbol{p},\sigma) &amp;\propto&amp; \sqrt{\text{det}\boldsymbol{I}(\boldsymbol{p},\sigma)}\\
+ &amp;\propto&amp; \frac{1}{\sigma^{N_p+1}} \sqrt{\text{det}\boldsymbol{J}_f^T(\boldsymbol{p}) \boldsymbol{W}^T \boldsymbol{W} \boldsymbol{J}_f(\boldsymbol{p})},
+\end{eqnarray}\]
+
+<p>where we have dropped all factors that do not depend on \(\boldsymbol{p}\) or \(\sigma\).</p>
+
+<h1 id="endnotes">Endnotes</h1>
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:exercise-reader" role="doc-endnote">
+      <p>Finally, I have an opportunity to be the one writing that sentence. <a href="#fnref:exercise-reader" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:uniform-prior" role="doc-endnote">
+      <p>Some problems arise when thinking in depth about the meaning of uniform priors. Those don’t have a lot of practical importance, but are interesting nonetheless. They are discussed e.g. in Sivia’s brilliant <a href="https://global.oup.com/academic/product/data-analysis-9780198568322https://global.oup.com/academic/product/data-analysis-9780198568322">Data Analysis - A Bayesian Tutorial</a>. <a href="#fnref:uniform-prior" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:ignorance" role="doc-endnote">
+      <p>Priors conveying ignorance are actually surprisingly tricky. We’ll see another one of those that has a vastly different functional form later. <a href="#fnref:ignorance" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:covpar" role="doc-endnote">
+      <p>Since the variances of the parameters are on the diagonal of the covariance matrix. <a href="#fnref:covpar" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:approx-f" role="doc-endnote">
+      <p>Maybe there is an argument here, if we argue that \(P(\boldsymbol{p}\vert \boldsymbol{y})\) is reasonably sharply peaked around \(\boldsymbol{p}^\dagger\), but I’m not sure. <a href="#fnref:approx-f" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:prop-uncertainty" role="doc-endnote">
+      <p>The formula for propagation of uncertainty is also derived under the approximation of linearity of the transformation. <a href="#fnref:prop-uncertainty" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+
+    <div>
+      <!-- <a href="https://ko-fi.com/geoant" target="_blank" title="Buy me a coffee :)">
+          <img src="https://raw.githubusercontent.com/geo-ant/user-content/refs/heads/main/ko-fi-support-blue.svg" 
+               alt="Banner Image" style="max-width: 190px; height: auto; margin-right: 20px;">
+      </a> -->
+    <div>
+  </div>
+    
+  <div>
+    
+    
+      <a href="/blog/tags/#algorithm" class="post-tag">algorithm</a>
+    
+      <a href="/blog/tags/#bayesian" class="post-tag">bayesian</a>
+    
+      <a href="/blog/tags/#least-squares" class="post-tag">least-squares</a>
+    
+      <a href="/blog/tags/#math" class="post-tag">math</a>
+    
+  </div>
+
+  <div>
+  
+    <script src="  https://unpkg.com/showdown/dist/showdown.min.js"></script>
+<script>
+const GH_API_URL = 'https://api.github.com/repos/statmlben/stackseparating/issues/65/comments'; // ?client_id=&client_secret=
+
+let request = new XMLHttpRequest();
+request.open( 'GET', GH_API_URL, true );
+request.onload = function() {
+	if ( this.status >= 200 && this.status < 400 ) {
+		let response = JSON.parse( this.response );
+
+		for ( var i = 0; i < response.length; i++ ) {
+			document.getElementById( 'gh-comments-list' ).appendChild( createCommentEl( response[ i ] ) );
+		}
+
+		if ( 0 === response.length ) {
+			document.getElementById( 'no-comments-found' ).style.display = 'block';
+		}
+	} else {
+		console.error( this );
+	}
+};
+
+function createCommentEl( response ) {
+	let user = document.createElement( 'a' );
+	user.setAttribute( 'href', response.user.url.replace( 'api.github.com/users', 'github.com' ) );
+	user.classList.add( 'user' );
+
+	//let userAvatar = document.createElement( 'img' );
+	let userAvatar = document.createElement( 'a' );
+	userAvatar.classList.add( 'avatar' );
+	userAvatar.innerHTML =  response.user.login +':';
+	//userAvatar.style.fontStyle = "italic";
+
+	user.appendChild( userAvatar );
+
+	let commentLink = document.createElement( 'a' );
+	commentLink.setAttribute( 'href', response.html_url );
+	commentLink.classList.add( 'comment-url' );
+	commentLink.innerHTML = '(#' + response.id + ' - ' + response.created_at+')';
+	commentLink.style.fontSize = "small";
+
+	let commentContents = document.createElement( 'div' );
+	commentContents.classList.add( 'comment-content' );
+	commentContents.innerHTML = response.body;
+	// Progressive enhancement.
+	if ( window.showdown ) {
+		let converter = new showdown.Converter();
+		commentContents.innerHTML = converter.makeHtml( response.body );
+	}
+
+	let comment = document.createElement( 'li' );
+	comment.setAttribute( 'data-created', response.created_at );
+	comment.setAttribute( 'data-author-avatar', response.user.avatar_url );
+	comment.setAttribute( 'data-user-url', response.user.url );
+
+	comment.appendChild( user );
+	comment.appendChild( commentContents );
+	comment.appendChild( commentLink );
+
+	return comment;
+}
+request.send();
+</script>
+
+
+<div class="github-comments">
+	<h1>Comments</h1>
+	<ul id="gh-comments-list"></ul>
+	<p id="no-comments-found">You can comment on this post using your GitHub account.</p>
+	<p id="leave-a-comment">Join the discussion for this article on <a href="https://github.com/statmlben/stackseparating/issues/65">this ticket</a>. Comments appear on this page instantly.</p>
+</div>
+
+  
+
+  
+    <script type="text/javascript">
+window.MathJax = {
+  tex: {
+    packages: ['base', 'ams', 'boldsymbol', 'require']
+  },
+  loader: {
+    load: ['ui/menu', '[tex]/ams', '[tex]/boldsymbol' ,'[tex]/require']
+  },
+  startup: {
+    ready() {
+      MathJax.startup.defaultReady();
+      const Macro = MathJax._.input.tex.Symbol.Macro;
+      const MapHandler = MathJax._.input.tex.MapHandler.MapHandler;
+      const Array = MathJax._.input.tex.ams.AmsMethods.default.Array;
+      const env = new Macro('psmallmatrix', Array, [null, '(', ')', 'c', '.333em', '.2em', 'S', 1]);
+      MapHandler.getMap('AMSmath-environment').add('psmallmatrix', env);
+    }
+  }
+};
+</script>
+<script type="text/javascript" id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"> 
+<!-- replace with this for local mathjax support (for drafting without internet). DON'T PUBLISH -->
+<!-- src="/home/georgios/code/thirdparty/MathJax/es5/tex-chtml.js"> -->
+</script>
+
+  
+  </div>
+
+</article>
+
+    </div>
+
+    <div class="wrapper-footer">
+      <div class="container">
+        <footer class="footer">
+          
+<a href="mailto:bendai@cuhk.edu.hk"><i class="svg-icon email"></i></a>
+
+
+<a href="https://github.com/statmlben"><i class="svg-icon github"></i></a>
+
+
+
+<!-- <a href="/blog/feed.xml"><i class="svg-icon rss"></i></a> -->
+
+
+
+
+        </footer>
+      </div>
+    </div>
+
+    
+<script type="text/javascript">
+  /**
+ * AnchorJS - v4.1.0 - 2017-09-20
+ * https://github.com/bryanbraun/anchorjs
+ * Copyright (c) 2017 Bryan Braun; Licensed MIT
+ */
+!function(A,e){"use strict";"function"==typeof define&&define.amd?define([],e):"object"==typeof module&&module.exports?module.exports=e():(A.AnchorJS=e(),A.anchors=new A.AnchorJS)}(this,function(){"use strict";return function(A){function e(A){A.icon=A.hasOwnProperty("icon")?A.icon:"",A.visible=A.hasOwnProperty("visible")?A.visible:"hover",A.placement=A.hasOwnProperty("placement")?A.placement:"right",A.ariaLabel=A.hasOwnProperty("ariaLabel")?A.ariaLabel:"Anchor",A.class=A.hasOwnProperty("class")?A.class:"",A.truncate=A.hasOwnProperty("truncate")?Math.floor(A.truncate):64}function t(A){var e;if("string"==typeof A||A instanceof String)e=[].slice.call(document.querySelectorAll(A));else{if(!(Array.isArray(A)||A instanceof NodeList))throw new Error("The selector provided to AnchorJS was invalid.");e=[].slice.call(A)}return e}function i(){if(null===document.head.querySelector("style.anchorjs")){var A,e=document.createElement("style");e.className="anchorjs",e.appendChild(document.createTextNode("")),void 0===(A=document.head.querySelector('[rel="stylesheet"], style'))?document.head.appendChild(e):document.head.insertBefore(e,A),e.sheet.insertRule(" .anchorjs-link {   opacity: 0;   text-decoration: none;   -webkit-font-smoothing: antialiased;   -moz-osx-font-smoothing: grayscale; }",e.sheet.cssRules.length),e.sheet.insertRule(" *:hover > .anchorjs-link, .anchorjs-link:focus  {   opacity: 1; }",e.sheet.cssRules.length),e.sheet.insertRule(" [data-anchorjs-icon]::after {   content: attr(data-anchorjs-icon); }",e.sheet.cssRules.length),e.sheet.insertRule(' @font-face {   font-family: "anchorjs-icons";   src: url(data:n/a;base64,AAEAAAALAIAAAwAwT1MvMg8yG2cAAAE4AAAAYGNtYXDp3gC3AAABpAAAAExnYXNwAAAAEAAAA9wAAAAIZ2x5ZlQCcfwAAAH4AAABCGhlYWQHFvHyAAAAvAAAADZoaGVhBnACFwAAAPQAAAAkaG10eASAADEAAAGYAAAADGxvY2EACACEAAAB8AAAAAhtYXhwAAYAVwAAARgAAAAgbmFtZQGOH9cAAAMAAAAAunBvc3QAAwAAAAADvAAAACAAAQAAAAEAAHzE2p9fDzz1AAkEAAAAAADRecUWAAAAANQA6R8AAAAAAoACwAAAAAgAAgAAAAAAAAABAAADwP/AAAACgAAA/9MCrQABAAAAAAAAAAAAAAAAAAAAAwABAAAAAwBVAAIAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAMCQAGQAAUAAAKZAswAAACPApkCzAAAAesAMwEJAAAAAAAAAAAAAAAAAAAAARAAAAAAAAAAAAAAAAAAAAAAQAAg//0DwP/AAEADwABAAAAAAQAAAAAAAAAAAAAAIAAAAAAAAAIAAAACgAAxAAAAAwAAAAMAAAAcAAEAAwAAABwAAwABAAAAHAAEADAAAAAIAAgAAgAAACDpy//9//8AAAAg6cv//f///+EWNwADAAEAAAAAAAAAAAAAAAAACACEAAEAAAAAAAAAAAAAAAAxAAACAAQARAKAAsAAKwBUAAABIiYnJjQ3NzY2MzIWFxYUBwcGIicmNDc3NjQnJiYjIgYHBwYUFxYUBwYGIwciJicmNDc3NjIXFhQHBwYUFxYWMzI2Nzc2NCcmNDc2MhcWFAcHBgYjARQGDAUtLXoWOR8fORYtLTgKGwoKCjgaGg0gEhIgDXoaGgkJBQwHdR85Fi0tOAobCgoKOBoaDSASEiANehoaCQkKGwotLXoWOR8BMwUFLYEuehYXFxYugC44CQkKGwo4GkoaDQ0NDXoaShoKGwoFBe8XFi6ALjgJCQobCjgaShoNDQ0NehpKGgobCgoKLYEuehYXAAAADACWAAEAAAAAAAEACAAAAAEAAAAAAAIAAwAIAAEAAAAAAAMACAAAAAEAAAAAAAQACAAAAAEAAAAAAAUAAQALAAEAAAAAAAYACAAAAAMAAQQJAAEAEAAMAAMAAQQJAAIABgAcAAMAAQQJAAMAEAAMAAMAAQQJAAQAEAAMAAMAAQQJAAUAAgAiAAMAAQQJAAYAEAAMYW5jaG9yanM0MDBAAGEAbgBjAGgAbwByAGoAcwA0ADAAMABAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAH//wAP) format("truetype"); }',e.sheet.cssRules.length)}}this.options=A||{},this.elements=[],e(this.options),this.isTouchDevice=function(){return!!("ontouchstart"in window||window.DocumentTouch&&document instanceof DocumentTouch)},this.add=function(A){var n,o,s,a,r,c,h,l,u,d,f,p=[];if(e(this.options),"touch"===(f=this.options.visible)&&(f=this.isTouchDevice()?"always":"hover"),A||(A="h2, h3, h4, h5, h6"),0===(n=t(A)).length)return this;for(i(),o=document.querySelectorAll("[id]"),s=[].map.call(o,function(A){return A.id}),r=0;r<n.length;r++)if(this.hasAnchorJSLink(n[r]))p.push(r);else{if(n[r].hasAttribute("id"))a=n[r].getAttribute("id");else if(n[r].hasAttribute("data-anchor-id"))a=n[r].getAttribute("data-anchor-id");else{u=l=this.urlify(n[r].textContent),h=0;do{void 0!==c&&(u=l+"-"+h),c=s.indexOf(u),h+=1}while(-1!==c);c=void 0,s.push(u),n[r].setAttribute("id",u),a=u}a.replace(/-/g," "),(d=document.createElement("a")).className="anchorjs-link "+this.options.class,d.href="#"+a,d.setAttribute("aria-label",this.options.ariaLabel),d.setAttribute("data-anchorjs-icon",this.options.icon),"always"===f&&(d.style.opacity="1"),""===this.options.icon&&(d.style.font="1em/1 anchorjs-icons","left"===this.options.placement&&(d.style.lineHeight="inherit")),"left"===this.options.placement?(d.style.position="absolute",d.style.marginLeft="-1em",d.style.paddingRight="0.5em",n[r].insertBefore(d,n[r].firstChild)):(d.style.paddingLeft="0.375em",n[r].appendChild(d))}for(r=0;r<p.length;r++)n.splice(p[r]-r,1);return this.elements=this.elements.concat(n),this},this.remove=function(A){for(var e,i,n=t(A),o=0;o<n.length;o++)(i=n[o].querySelector(".anchorjs-link"))&&(-1!==(e=this.elements.indexOf(n[o]))&&this.elements.splice(e,1),n[o].removeChild(i));return this},this.removeAll=function(){this.remove(this.elements)},this.urlify=function(A){var t=/[^A-Za-z0-9._-]/g;return this.options.truncate||e(this.options),A.trim().replace(/\'/gi,"").replace(t,"-").replace(/-{2,}/g,"-").substring(0,this.options.truncate).replace(/^-+|-+$/gm,"").toLowerCase()},this.hasAnchorJSLink=function(A){var e=A.firstChild&&(" "+A.firstChild.className+" ").indexOf(" anchorjs-link ")>-1,t=A.lastChild&&(" "+A.lastChild.className+" ").indexOf(" anchorjs-link ")>-1;return e||t||!1}}});
+
+  new AnchorJS({
+    placement: 'left',
+    truncate: 32,
+    visible: 'hover',
+  }).add('h2');
+
+  new AnchorJS({
+    icon: '¶',
+    placement: 'left',
+    truncate: 32,
+    visible: 'hover',
+  }).add('p');
+</script>
+
+
+  </body>
+</html>
